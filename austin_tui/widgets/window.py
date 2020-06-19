@@ -20,108 +20,71 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import asyncio
 import curses
 
-from austin_tui.widgets import Widget
+from austin_tui.widgets import Container
 
 
-class Window(Widget):
-    def __init__(self):
-        super().__init__()
-        self._scr = None
+class Window(Container):
+    def __init__(self, name):
+        super().__init__(name)
+        self._win = None
 
-        self._visible = False
+        self.win = self
 
-        self._input_event = asyncio.Event()
-        self._input_task = asyncio.get_event_loop().create_task(self._input_loop())
+    def resize(self):
+        super().resize()
 
-    async def _input_loop(self):
-        await self._input_event.wait()
-        while self._visible:
-            await asyncio.sleep(0.015)
+        (child,) = self._children
+        child.height, child.width = self.get_size()
 
-            if not self._scr:
-                continue
-
-            # self._scr.refresh()
-            try:
-                self.dispatch(self._scr.getkey())
-            except curses.error:
-                pass
-
-            except Exception as e:
-                from austin_tui import write_exception_to_file
-
-                write_exception_to_file(e)
-                raise KeyboardInterrupt()
+        if child.resize():
+            self.refresh()
 
     def refresh(self):
-        try:
-            return super().refresh()
-        finally:
-            self._scr.refresh()
+        if self._win:
+            self._win.refresh()
 
     def show(self):
+        if self._win is not None:
+            return
 
-        self._scr = curses.initscr()
+        self._win = curses.initscr()
         curses.noecho()
         curses.cbreak()
-        self._scr.keypad(1)
+        self._win.keypad(1)
         try:
             curses.start_color()
-        except:
+        except Exception:
             pass
 
         curses.use_default_colors()
         curses.curs_set(False)
 
-        self._scr.clear()
-        self._scr.timeout(0)  # non-blocking for async I/O
-        self._scr.nodelay(True)
+        self._win.clear()
+        self._win.timeout(0)  # non-blocking for async I/O
+        self._win.nodelay(True)
 
-        try:
-            self.build_ui(self._scr)
-        except Exception as e:
-            from austin_tui import write_exception_to_file
+        self.height, self.width = self.get_size()
 
-            write_exception_to_file(e)
-            raise e
-        self.refresh()
-
-        self._visible = True
-
-        self._input_event.set()
-        # self._scr.refresh()
-        # try:
-        #     self.table_pad.getkey()
-        # except curses.error:
-        #     pass
+        super().show()
 
     def hide(self):
-        self._visible = False
+        if self._win is None:
+            return
 
-        # self._scr.clrtoeol()
-        # self._scr.refresh()
-
-        self._scr.keypad(0)
+        self._win.keypad(0)
         curses.echo()
         curses.nocbreak()
         curses.endwin()
 
-        self._input_task.cancel()
-
-    def run(self, screen):
-        pass
-
-    def build_ui(self):
-        pass
+        self._win = None
 
     def get_size(self):
-        return self._scr.getmaxyx()
+        return self._win.getmaxyx()
 
-    def get_screen(self):
-        return self._scr
+    def get_win(self):
+        return self._win
 
     def is_visible(self):
-        return self._visible
+        return self._win is not None

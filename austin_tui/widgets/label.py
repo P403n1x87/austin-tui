@@ -23,8 +23,8 @@
 import curses
 from collections import deque
 from enum import Enum
+from typing import Any
 
-from austin_tui.view.palette import Color
 from austin_tui.widgets import Widget
 
 
@@ -52,105 +52,136 @@ def ell(text, length, sep=".."):
 class Label(Widget):
     def __init__(
         self,
-        y,
-        x,
+        name,
         width=None,
+        height=1,
         text="",
         align=TextAlign.LEFT,
-        color=0,
+        color="default",
         reverse=False,
         bold=False,
         ellipsize=True,
     ):
-        super().__init__()
+        super().__init__(name, width, height)
 
-        self.x = x
-        self.y = y
-        self.color = curses.color_pair(color)
-        self.reverse = reverse and curses.A_REVERSE or 0
-        self.bold = bold and curses.A_BOLD or 0
+        self.color = color
+        self.reverse = reverse
+        self.bold = bold
         self.text = text
         self.ellipsize = ellipsize
-        self.width = width
-        self.align = align
+        self.align = (
+            align if isinstance(align, TextAlign) else getattr(TextAlign, align.upper())
+        )
 
-        self.scr = None
+    def set_text(self, text: Any) -> None:
+        new_text = str(text)
+        if new_text != self.text:
+            self.text = new_text
+            return self.draw()
 
-    def set_text(self, text):
-        self.text = text
-        # self.refresh()
+        return False
 
-    def set_color(self, color: Color):
-        self.color = curses.color_pair(color)
+    def set_color(self, color: str):
+        if color != self.color:
+            self.color = color
+            return self.draw()
+
+        return False
 
     def set_bold(self, bold=True):
-        self.bold = bold and curses.A_BOLD or 0
+        if bold != self.bold:
+            self.bold = bold and curses.A_BOLD or 0
+            return self.draw()
 
-    def get_text(self):
-        return self.text
+        return False
 
     @property
     def attr(self):
-        return self.color | self.bold | self.reverse
+        return (
+            curses.color_pair(self.view.palette.get_color(self.color))
+            | (self.bold and curses.A_BOLD or 0)
+            | (self.reverse and curses.A_REVERSE or 0)
+        )
 
-    def refresh(self):
-        if self.scr is None:
-            self.scr = self.get_toplevel().get_screen()
+    def draw(self):
+        win = self.win.get_win()
+        if not win:
+            return False
+
+        width = self.width or (max(0, self.parent.width - self.x - 1))
+        if not width:
+            return False
 
         attr = self.attr
-        width = self.width or (max(0, self.scr.getmaxyx()[1] - self.x - 1))
         format = "{:" + f"{self.align.value}{width}" + "}"
 
-        if isinstance(self.text, list):
-            for i, line in enumerate(self.text):
-                text = format.format(line or "")
-                if self.ellipsize:
-                    text = ell(text, width)
-                self.scr.addstr(self.y + i, self.x, text, attr)
-        else:
-            text = format.format(self.text or "")
+        for i, line in enumerate(self.text.split(r"\n")):
+            if i >= self.height:
+                break
+            text = format.format(line or "")
             if self.ellipsize:
                 text = ell(text, width)
-            self.scr.addstr(self.y, self.x, format.format(text or ""), attr)
+            try:
+                win.addstr(self.y + i, self.x, text, attr)
+            except curses.error:
+                # Curses cannot write at the bottom right corner of the screen
+                # so we ignore this error. Be aware that this might be
+                # swallowing actual errors.
+                pass
+        else:
+            return False
 
-
-class TaggedLabel(Label):
-    def __init__(
-        self,
-        y,
-        x,
-        width=None,
-        text="",
-        tag={},
-        align=TextAlign.LEFT,
-        color=0,
-        reverse=False,
-        bold=False,
-        ellipsize=True,
-    ):
-        super().__init__(y, x, width, text, align, color, reverse, bold, ellipsize)
-        self.orig_x, self.orig_y = x, y
-
-        self.add_child("tag", Label(y, x, **tag))
-
-    def refresh(self):
-        tag = self.get_child("tag")
-        tag.refresh()
-        self.x = self.orig_x + len(tag.get_text()) + 1
-        super().refresh()
-        self.scr.addstr(self.y, self.x - 1, " ")
+        return True
 
 
 class Line(Label):
-    def __init__(self, y, x, text="", color=0, reverse=False, bold=False):
+    def __init__(self, name, text="", color="default", reverse=False, bold=False):
         super().__init__(
-            y, x, text=text, color=color, reverse=reverse, bold=bold, ellipsize=False
+            name=name,
+            text=text,
+            color=color,
+            reverse=reverse,
+            bold=bold,
+            ellipsize=False,
         )
 
     def refresh(self):
         super().refresh()
 
-        self.scr.chgat(self.attr)
+
+class ToggleLabel(Label):
+    def __init__(
+        self,
+        name,
+        width=None,
+        height=1,
+        text="",
+        align=TextAlign.LEFT,
+        on="default",
+        off="default",
+        state="0",
+        reverse=False,
+        bold=False,
+        ellipsize=True,
+    ):
+        self._colors = (off, on)
+        self._state = int(state)
+
+        super().__init__(
+            name,
+            width=width,
+            height=height,
+            text=text,
+            align=align,
+            color=self._colors[self._state],
+            reverse=reverse,
+            bold=bold,
+            ellipsize=ellipsize,
+        )
+
+    def toggle(self):
+        self._state = 1 - self._state
+        return self.set_color(self._colors[self._state])
 
 
 class BarPlot(Label):
@@ -162,26 +193,26 @@ class BarPlot(Label):
         i = max(0, min(i, 1))
         return BarPlot.STEPS[int(i * (len(BarPlot.STEPS) - 1))]
 
-    def __init__(self, y, x, width=8, scale=None, init=None, color=0):
-        super().__init__(y, x, width=8, color=color, ellipsize=False)
+    def __init__(self, name, width=8, scale=None, init=None, color="default"):
+        super().__init__(name, width=8, color=color, ellipsize=False)
 
-        self._values = deque([init] * width if init is not None else [], maxlen=width)
-        self.scale = scale or 0
+        self._values = deque(
+            [int(init)] * width if init is not None else [], maxlen=width
+        )
+        self.scale = int(scale or 0)
         self.auto = not scale
+
+    def _plot(self):
+        return self.set_text(
+            "".join(
+                BarPlot.bar_icon(v / self.scale if self.scale else v)
+                for v in self._values
+            )
+        )
 
     def push(self, value):
         self._values.append(value)
         if self.auto:
             self.scale = max(self._values)
 
-        self.plot()
-
-        return value
-
-    def plot(self):
-        self.set_text(
-            "".join(
-                BarPlot.bar_icon(v / self.scale if self.scale else v)
-                for v in self._values
-            )
-        )
+        return self._plot()

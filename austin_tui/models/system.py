@@ -23,9 +23,12 @@
 import time
 import typing
 
+from psutil import NoSuchProcess
+
+
 Seconds = typing.NewType("Seconds", float)
 Percentage = typing.NewType("Percentage", float)
-MegaBytes = typing.NewType("MegaBytes", int)
+Bytes = typing.NewType("Bytes", int)
 
 
 class SystemModel:
@@ -33,7 +36,7 @@ class SystemModel:
         self._start_time: Seconds = None
         self._end_time: Seconds = None
 
-        self._max_mem: MegaBytes = 1
+        self._max_mem: Bytes = 0
 
     def start(self):
         self._start_time = time.time()
@@ -50,12 +53,18 @@ class SystemModel:
         )
 
     def get_cpu(self, process) -> Percentage:
-        return int(process.cpu_percent())
+        try:
+            return int(process.cpu_percent())
+        except NoSuchProcess:
+            return 0
 
-    def get_memory(self, process) -> MegaBytes:
-        mem = process.memory_full_info()[0] >> 20
-        self._max_mem = max(mem, self._max_mem)
-        return mem
+    def get_memory(self, process) -> Bytes:
+        try:
+            mem = process.memory_full_info()[0]
+            self._max_mem = max(mem, self._max_mem)
+            return mem
+        except NoSuchProcess:
+            return 0
 
     @property
     def max_memory(self):

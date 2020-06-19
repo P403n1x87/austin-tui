@@ -21,12 +21,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from enum import Enum
+from time import time
 
 from austin_tui.controllers import Controller, Event
-from austin_tui.controllers.system import fmt_time as _fmt_time  # TODO: remove
 from austin_tui.models import AustinModel
-from austin_tui.view.palette import Color
-from austin_tui.widgets.markup import AttrStringChunk, am, escape
+from austin_tui.widgets.markup import escape
 
 
 class AustinProfileMode(Enum):
@@ -44,35 +43,7 @@ class AustinEvent(Event):
     UPDATE = "on_update"
     CHANGE_THREAD = "on_change_thread"
     TOGGLE_FULL_MODE = "on_toggle_full_mode"
-
-
-def fmt_time(t, active=True):
-    return AttrStringChunk(
-        f" {_fmt_time(t):^6} ", color=Color.INACTIVE if not active else None
-    )
-
-
-def fmt_mem(s, active=True):
-    return AttrStringChunk(
-        f" {int(s)>>10: 5d}M ", color=Color.INACTIVE if not active else None
-    )
-
-
-def color_level(p, a=True):
-    d = 10 if a else 20
-    return d + int(p / 20 - 0.5)
-
-
-def _scaler(ratio, active):
-    return AttrStringChunk(f" {ratio:5.1f}% ", color=color_level(ratio, active))
-
-
-def scale_memory(memory, max_memory, active=True):
-    return _scaler((memory >> 10) / max_memory * 100, active)
-
-
-def scale_time(time, duration, active=True):
-    return _scaler(min(time / 1e4 / duration, 100), active)
+    SAVE = "on_save"
 
 
 class AustinController(Controller):
@@ -86,6 +57,7 @@ class AustinController(Controller):
         self._full_mode = False
         self._scaler = None
         self._formatter = None
+        self._last_timestamp = 0
 
     def set_current_stack(self):
         thread_key = self.model.threads[self._thread_index]
@@ -109,7 +81,7 @@ class AustinController(Controller):
                     self._formatter(child_frame_stats.total.time),
                     self._scaler(child_frame_stats.own.time, max_scale),
                     self._scaler(child_frame_stats.total.time, max_scale),
-                    am(
+                    self.view.markup(
                         " "
                         + escape(child_frame_stats.label.function)
                         + f" <inactive>({escape(child_frame_stats.label.filename)}:{child_frame_stats.label.line})</inactive>"
@@ -118,7 +90,7 @@ class AustinController(Controller):
             )
             container = child_frame_stats.children
 
-        self.view.table_pad.set_data(frame_stats)
+        self.view.table.set_data(frame_stats)
 
     def set_full_thread_stack(self):
         thread_key = self.model.threads[self._thread_index]
@@ -146,7 +118,7 @@ class AustinController(Controller):
                     self._formatter(stats.total.time, active),
                     self._scaler(stats.own.time, max_scale, active),
                     self._scaler(stats.total.time, max_scale, active),
-                    am(
+                    self.view.markup(
                         " "
                         + f"<inactive>{marker}</inactive>"
                         + (
@@ -154,7 +126,7 @@ class AustinController(Controller):
                             if active
                             else f"<inactive>{escape(stats.label.function)}</inactive>"
                         )
-                        + f" <inactive>({escape(stats.label.filename)}:{stats.label.line})</inactive>"
+                        + f" <inactive>(<filename>{escape(stats.label.filename)}</filename>:<lineno>{stats.label.line}</lineno>)</inactive>"
                     ),
                 ]
             )
@@ -187,7 +159,7 @@ class AustinController(Controller):
 
             add_frame_stats(children[-1], "└─ ", "   ", 0, thread_stats.children)
 
-        self.view.table_pad.set_data(frame_stats)
+        self.view.table.set_data(frame_stats)
 
     def set_thread_stack(self):
         if not self.model.threads:
@@ -198,10 +170,12 @@ class AustinController(Controller):
         else:
             self.set_current_stack()
 
+        self._last_timestamp = self.model.stats.timestamp
+
     def set_thread(self):
         if not self.model.threads:
             self.view.thread_num.set_text("--")
-            return
+            return True
 
         # Set thread number
         self.view.thread_num.set_text(self._thread_index + 1)
@@ -213,11 +187,13 @@ class AustinController(Controller):
         # Populate the thread stack view
         self.set_thread_stack()
 
+        return True
+
     def on_start(self, data=None):
         self._formatter, self._scaler = (
-            (fmt_mem, scale_memory)
+            (self.view.fmt_mem, self.view.scale_memory)
             if self.view.mode == AustinProfileMode.MEMORY
-            else (fmt_time, scale_time)
+            else (self.view.fmt_time, self.view.scale_time)
         )
 
     def on_update(self, data=None):
@@ -227,7 +203,10 @@ class AustinController(Controller):
         # Count total threads (across processes)
         self.view.thread_total.set_text(len(self.model.threads))
 
-        self.set_thread()
+        if self.model.stats.timestamp > self._last_timestamp:
+            return self.set_thread()
+
+        return False
 
     def on_change_thread(self, direction: ThreadNav):
         prev_index = self._thread_index
@@ -237,8 +216,22 @@ class AustinController(Controller):
         )
 
         if prev_index != self._thread_index:
-            self.set_thread()
+            return self.set_thread()
+
+        return False
 
     def on_toggle_full_mode(self, data=None):
         self._full_mode = not self._full_mode
         self.set_thread_stack()
+
+    def on_save(self, data=None):
+        pid = self.view._system_controller._child_proc.pid
+        filename = f"austin_{int(time())}_{pid}.aprof"
+        try:
+            with open(filename, "w") as fout:
+                self.model.stats.dump(fout)
+                self.view.notification.set_text(f"Stats saved as {filename}")
+        except IOError as e:
+            self.view.notification.set_text(f"Failed to save stats: {e}")
+
+        return True

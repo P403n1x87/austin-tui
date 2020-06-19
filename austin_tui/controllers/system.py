@@ -60,10 +60,10 @@ class SystemController(Controller):
         self.view.duration.set_text(fmt_time(int(self.model.duration * 1e6)))
 
         cpu = self.model.get_cpu(self._child_proc)
-        self.view.cpu.set_text(f"{cpu}%")
+        self.view.cpu.set_text(f"{cpu}% ")
         self.view.cpu_plot.push(cpu)
 
         mem = self.model.get_memory(self._child_proc)
 
-        self.view.mem.set_text(f"{mem}M")
+        self.view.mem.set_text(f"{mem>>20}M ")
         self.view.mem_plot.push(mem)

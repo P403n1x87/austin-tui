@@ -20,40 +20,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import curses
 from typing import Any
 
 
-class Color:
-    INACTIVE = 1
-    HEAT_ACTIVE = 10
-    HEAT_INACTIVE = 20
-    RUNNING = 2
-    STOPPED = 3
-    CPU = 4
-    MEMORY = 5
-    THREAD = 6
+class PaletteError(Exception):
+    pass
 
 
-PALETTE = {
-    Color.INACTIVE: (246, -1),
-    Color.RUNNING: (10, -1),
-    Color.STOPPED: (1, -1),
-    Color.CPU: (curses.COLOR_BLUE, -1),  # 17
-    Color.MEMORY: (curses.COLOR_GREEN, -1),  # 22
-    Color.THREAD: (11, -1),  # 22
-}
+class Palette:
+    def __init__(self):
+        self._colors = {"default": 0}
+        self._color_pairs = {}
 
+    def add_color(self, name, fg=-1, bg=-1):
+        color_id = len(self._colors)
+        self._colors[name] = color_id
+        self._color_pairs[color_id] = (int(fg), int(bg))
 
-def init():
-    for color, values in PALETTE.items():
-        curses.init_pair(color, *values)
+    def get_color(self, name):
+        try:
+            return getattr(self, name)
+        except KeyError:
+            raise PaletteError(f"The palette has no color '{name}'")
 
-    j = Color.HEAT_ACTIVE
-    for i in [-1, 226, 208, 202, 196]:
-        curses.init_pair(j, i, -1)
-        j += 1
-    j = Color.HEAT_INACTIVE
-    for i in [246, 100, 130, 94, 88]:
-        curses.init_pair(j, i, -1)
-        j += 1
+    def __getattr__(self, name):
+        return self._colors[name]
+
+    def init(self):
+        for cid, pair in self._color_pairs.items():
+            curses.init_pair(cid, *pair)

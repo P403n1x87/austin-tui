@@ -21,57 +21,77 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+class ContainerError(Exception):
+    pass
+
+
 class Widget:
-    def __init__(self):
+    def __init__(self, name, width=0, height=0):
+        self.win = None
         self.parent = None
-        self._children = {}
-        self._event_handlers = {"KEY_RESIZE": self.on_resize}
+        self.view = None
 
-    def __getattr__(self, name):
-        try:
-            return self._children[name]
-        except KeyError:
-            raise AttributeError(self, self.parent, name)
+        self.name = name
 
-    def add_child(self, name, child):
-        # if name in self._children:
-        #     raise RuntimeError(f"Child {name} already exists.")
+        # geometry
+        self.x = 0
+        self.y = 0
+        self.width = int(width or 0)
+        self.height = int(height or 0)
 
-        child.parent = self
-        self._children[name] = child
-
-    def get_child(self, name):
-        return self._children.get(name, None)
-
-    def connect(self, event, handler):
-        self._event_handlers[event] = handler
-
-    def dispatch(self, event, *args, **kwargs):
-        for _, child in self._children.items():
-            if child.dispatch(event, *args, **kwargs):
-                return True
-
-        try:
-            return self._event_handlers[event](*args, **kwargs)
-        except KeyError:
-            return False
-            # import traceback as tb
-            #
-            # with open("/tmp/exc", "w") as fout:
-            #     fout.write("".join(tb.format_tb(e.__traceback__)))
-            # pass
-
-    def on_resize(self):
-        self.refresh()
-        return False
-
-    def get_toplevel(self):
-        toplevel = self
-        while toplevel.parent:
-            toplevel = toplevel.parent
-
-        return toplevel
+        self._expand = [not width, not height]
 
     def refresh(self):
-        for _, child in self._children.items():
-            child.refresh()
+        self.win.refresh()
+
+    def show(self):
+        pass
+
+    def hide(self):
+        pass
+
+    def draw(self):
+        return False
+
+    def resize(self):
+        return False
+
+
+class Container(Widget):
+    def __init__(self, name):
+        super().__init__(name)
+        self._children = []
+        self._children_map = {}
+
+    def __getattr__(self, name):
+        return self.get_child(name)
+
+    def show(self):
+        for child in self._children:
+            child.show()
+
+    def draw(self):
+        refresh = False
+        for child in self._children:
+            refresh |= child.draw()
+        return refresh
+
+    def add_child(self, child):
+        if child.name in self._children_map:
+            raise RuntimeError(
+                f"Widget {self.name} already has a child with name {child.name}."
+            )
+
+        child.parent = self
+        child.win = self.win
+
+        self._children_map[child.name] = len(self._children)
+        self._children.append(child)
+
+    def get_child(self, name):
+        try:
+            return self._children[self._children_map[name]]
+        except KeyError:
+            raise ContainerError(
+                f"Widget {self.name} does not contain the child widget {name}"
+            )

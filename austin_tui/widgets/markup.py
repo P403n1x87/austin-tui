@@ -1,9 +1,30 @@
+# This file is part of "austin-tui" which is released under GPL.
+#
+# See file LICENCE or go to http://www.gnu.org/licenses/ for full license
+# details.
+#
+# austin-tui is top-like TUI for Austin.
+#
+# Copyright (c) 2018-2020 Gabriele N. Tornetta <phoenix1987@gmail.com>.
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import curses
 from abc import ABC, abstractmethod
 
 from lxml import etree
 
-from austin_tui.view.palette import Color
 from dataclasses import dataclass
 
 
@@ -29,7 +50,7 @@ class Writable(ABC):
 @dataclass
 class AttrStringChunk(Writable):
     text: str
-    color: Color = None
+    color: str = "default"
     bold: bool = False
     reversed: bool = False
 
@@ -45,8 +66,9 @@ class AttrStringChunk(Writable):
         return attr
 
     def write(self, window, y, x, maxlen: int = None) -> int:
-        text = self.text[:maxlen] if maxlen else self.text
-        window.addstr(y, x, _unescape(text), self.attr)
+        text = _unescape(self.text)
+        text = text[:maxlen] if maxlen else text
+        window.addstr(y, x, text, self.attr)
         return len(text)
 
     def __len__(self):
@@ -80,16 +102,19 @@ class AttrString(Writable):
             written = chunk.write(window, y, i, available)
             n += written
             available -= written
+            if available <= 0:
+                break
             i += len(chunk.text)
         return n
 
 
-def am(text):
+def markup(text, palette):
     astr = AttrString()
 
     root = etree.fromstring(f"<amRoot>{text}</amRoot>")
 
-    def add_strings(node, color=None, bold=False, reversed=False):
+    def add_strings(node, color="default", bold=False, reversed=False):
+        color = palette.get_color(color)
         if node.text:
             astr.append(AttrStringChunk(node.text, color, bold, reversed))
 
@@ -99,9 +124,7 @@ def am(text):
             elif e.tag == StringAttr.REVERSED:
                 add_strings(e, color=color, bold=bold, reversed=True)
             else:
-                add_strings(
-                    e, color=getattr(Color, e.tag.upper()), bold=bold, reversed=reversed
-                )
+                add_strings(e, color=e.tag, bold=bold, reversed=reversed)
             if e.tail:
                 astr.append(AttrStringChunk(e.tail, color, bold, reversed))
 
@@ -111,7 +134,7 @@ def am(text):
 
 
 if __name__ == "__main__":
-    a = am("Well <inactive>&lt;hello&gt;</inactive> world<running>!</running>")
+    a = markup("Well <inactive>&lt;hello&gt;</inactive> world<running>!</running>")
     print(repr(a))
     print(a)
     print(len(a))

@@ -49,6 +49,7 @@ python = ">=3.6"
 austin-python = {git = "https://github.com/P403n1x87/austin-python.git", branch = "devel"}
 windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
 lxml = "^4.5.1"
+importlib-resources = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 coverage = {extras = ["toml"], version = "*"}

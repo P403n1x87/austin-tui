@@ -27,7 +27,11 @@ from austin import AustinError
 from austin.aio import AsyncAustin
 from austin.cli import AustinArgumentParser, AustinCommandLineError
 from austin_tui.models import AustinModel
-from austin_tui.view import AustinProfileMode, AustinView
+from austin_tui.view import ViewBuilder
+from austin_tui.view.austin import AustinProfileMode, AustinView
+
+
+from austin_tui import catch
 
 
 class AustinTUIArgumentParser(AustinArgumentParser):
@@ -49,10 +53,9 @@ class AustinTUI(AsyncAustin):
             exit(code[0] if code else -1)
 
         self._model = AustinModel()
-        self._view = AustinView(
-            mode=AustinProfileMode.MEMORY
-            if self._args.memory
-            else AustinProfileMode.TIME
+        self._view = ViewBuilder.from_resource("austin_tui.view", "tui.austinui")
+        self._view.mode = (
+            AustinProfileMode.MEMORY if self._args.memory else AustinProfileMode.TIME
         )
 
         self._global_stats = None
@@ -62,17 +65,19 @@ class AustinTUI(AsyncAustin):
             self._model.update(sample)
         except Exception as e:
             from austin_tui import write_exception_to_file
+
             write_exception_to_file(e)
 
+    @catch
     def on_ready(self, austin_process, child_process, command_line):
         self._view._system_controller.set_child_process(child_process)
 
-        self._view.show()
+        self._view.open()
 
-        self._view.pid.tag.set_text("PPID" if self._args.children else "PID")
+        self._view.pid_label.set_text("PPID" if self._args.children else "PID")
         self._view.pid.set_text(child_process.pid)
 
-        self._view.thread_name.tag.set_text(
+        self._view.thread_name_label.set_text(
             "{}TID".format("PID:" if self._args.children else "")
         )
 
@@ -95,8 +100,8 @@ class AustinTUI(AsyncAustin):
             self.shutdown()
 
     def shutdown(self):
-        if self._view.is_visible():
-            self._view.hide()
+        self._view.close()
+
         try:
             self.terminate()
         except AustinError:
@@ -127,8 +132,7 @@ def main():
     tui = AustinTUI()
 
     def handler(loop, context):
-        if tui._view.is_visible():
-            tui._view.hide()
+        tui._view.close()
         loop.stop()
 
         from austin_tui import write_exception_to_file

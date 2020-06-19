@@ -21,14 +21,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from austin_tui.widgets.box import Box
-
-
-class CommandBar(Box):
-    def __init__(self, name):
-        super().__init__(name, flow="h")
-
-    def draw(self):
-        try:
-            return super().draw()
-        finally:
-            self.win.get_win().clrtoeol()
+from austin_tui.widgets.command_bar import CommandBar
+from austin_tui.widgets.label import BarPlot, Label, Line, ToggleLabel
+from austin_tui.widgets.scroll import ScrollView
+from austin_tui.widgets.table import Table
+from austin_tui.widgets.window import Window

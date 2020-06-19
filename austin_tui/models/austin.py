@@ -21,6 +21,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from austin.stats import AustinStats, InvalidSample, Sample
+from time import time
 
 
 class OrderedSet:
@@ -62,6 +63,7 @@ class AustinModel:
         self._invalids = 0
         self._last_stack = {}
         self._stats = AustinStats()
+        self._stats.timestamp = time()
 
         self._threads = OrderedSet()
 
@@ -69,6 +71,7 @@ class AustinModel:
         try:
             sample = Sample.parse(raw_sample)
             self._stats.update(sample)
+            self._stats.timestamp = time()
             thread_key = f"{sample.pid}:{sample.thread}"
             self._last_stack[thread_key] = sample
             self._threads.add(thread_key)
