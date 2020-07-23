@@ -211,7 +211,9 @@ class ViewBuilder:
     @staticmethod
     def from_resource(module, resource):
         return ViewBuilder._parse(
-            parse_xml_string(files(module).joinpath(resource).read_text().encode())
+            parse_xml_string(
+                files(module).joinpath(resource).read_text(encoding="utf8").encode()
+            )
         )
 
 
