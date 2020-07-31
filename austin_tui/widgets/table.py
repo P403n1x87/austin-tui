@@ -20,18 +20,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, List
+
 from austin_tui.widgets import Widget
 from austin_tui.widgets.markup import Writable
 
+TableData = List[List[Any]]
+
 
 class Table(Widget):
-    def __init__(self, name, columns):
+    """Table widget.
+
+    Requires a number of colums.
+    """
+
+    def __init__(self, name: str, columns: Any) -> None:
         super().__init__(name)
 
         self._cols = int(columns)
-        self._data = []
+        self._data: TableData = []
 
-    def _show_empty(self):
+    def _show_empty(self) -> bool:
         win = self.win.get_win()
         if not win:
             return False
@@ -47,7 +56,7 @@ class Table(Widget):
 
         return True
 
-    def _set_row(self, i, row):
+    def _draw_row(self, i: int, row: List[Any]) -> None:
         x = 0
         available = self.width
         win = self.win.get_win()
@@ -63,7 +72,12 @@ class Table(Widget):
                 delta = min(text[: available - x], len(text))
             x += delta
 
-    def set_data(self, data):
+    def set_data(self, data: TableData) -> None:
+        """Set the table data.
+
+        The format is a list of rows, with each row representing the content of
+        each cell.
+        """
         if data != self._data:
             h, w = self.parent.height, self.parent.width - 1
             self.height, self.width = h, w
@@ -72,11 +86,13 @@ class Table(Widget):
             self._data = data
             self.parent.draw()
 
-    def resize(self):
+    def resize(self) -> bool:
+        """Resize the table."""
         self.draw()
         return True
 
-    def draw(self):
+    def draw(self) -> bool:
+        """Draw the table."""
         super().draw()
 
         if not self._data:
@@ -87,7 +103,7 @@ class Table(Widget):
             self.win.get_win().clear()
             i = 0
             for e in self._data:
-                self._set_row(i, e)
+                self._draw_row(i, e)
                 i += 1
             else:
                 return False

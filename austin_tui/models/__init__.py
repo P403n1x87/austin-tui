@@ -20,5 +20,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from abc import ABC
+
+
+class Model(ABC):
+    """Base model."""
+
+    pass
+
+
 from austin_tui.models.austin import AustinModel
 from austin_tui.models.system import SystemModel

@@ -24,10 +24,13 @@ from austin_tui.widgets.box import Box
 
 
 class CommandBar(Box):
-    def __init__(self, name):
+    """A command bar that spans the whole width of the parent container."""
+
+    def __init__(self, name: str) -> None:
         super().__init__(name, flow="h")
 
-    def draw(self):
+    def draw(self) -> bool:
+        """Draw the command bar."""
         try:
             return super().draw()
         finally:

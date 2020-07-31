@@ -20,25 +20,36 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 from enum import Enum
+from io import StringIO
 from time import time
+from typing import Any
 
+from austin.stats import ThreadStats
 from austin_tui.controllers import Controller, Event
 from austin_tui.models import AustinModel
+from austin_tui.view import View
 from austin_tui.widgets.markup import escape
 
 
 class AustinProfileMode(Enum):
+    """Austin profile modes."""
+
     TIME = "Time"
     MEMORY = "Memory"
 
 
 class ThreadNav(Enum):
+    """Thread navigation."""
+
     PREV = -1
     NEXT = 1
 
 
 class AustinEvent(Event):
+    """Austin controller events."""
+
     START = "on_start"
     UPDATE = "on_update"
     CHANGE_THREAD = "on_change_thread"
@@ -47,10 +58,14 @@ class AustinEvent(Event):
 
 
 class AustinController(Controller):
+    """Austin controller.
+
+    This controller is in charge of Austin data managing and UI updates.
+    """
 
     __model__ = AustinModel
 
-    def __init__(self, view):
+    def __init__(self, view: View) -> None:
         super().__init__(view)
 
         self._thread_index = 0
@@ -59,7 +74,12 @@ class AustinController(Controller):
         self._formatter = None
         self._last_timestamp = 0
 
-    def set_current_stack(self):
+    def set_current_stack(self) -> None:
+        """Set the current stack."""
+        if not self._formatter or not self._scaler:
+            raise RuntimeError(
+                "Inconsistent state: either formatter or scaler not set."
+            )
         thread_key = self.model.threads[self._thread_index]
         pid, _, thread = thread_key.partition(":")
 
@@ -84,7 +104,8 @@ class AustinController(Controller):
                     self.view.markup(
                         " "
                         + escape(child_frame_stats.label.function)
-                        + f" <inactive>({escape(child_frame_stats.label.filename)}:{child_frame_stats.label.line})</inactive>"
+                        + f" <inactive>({escape(child_frame_stats.label.filename)}"
+                        f":{child_frame_stats.label.line})</inactive>"
                     ),
                 ]
             )
@@ -92,7 +113,12 @@ class AustinController(Controller):
 
         self.view.table.set_data(frame_stats)
 
-    def set_full_thread_stack(self):
+    def set_full_thread_stack(self) -> None:
+        """Set the full thread stack."""
+        if not self._formatter or not self._scaler:
+            raise RuntimeError(
+                "Inconsistent state: either formatter or scaler not set."
+            )
         thread_key = self.model.threads[self._thread_index]
         pid, _, thread = thread_key.partition(":")
 
@@ -104,9 +130,20 @@ class AustinController(Controller):
             else self.view._system_controller.model.duration
         )
 
-        def add_frame_stats(stats, marker, prefix, level=0, active_bucket=None):
+        def _add_frame_stats(
+            stats: ThreadStats,
+            marker: str,
+            prefix: str,
+            level: int = 0,
+            active_bucket: dict = None,
+            active_parent: bool = True,
+        ) -> None:
             try:
-                active = stats.label in active_bucket and stats.label == frames[level]
+                active = (
+                    stats.label in active_bucket
+                    and stats.label == frames[level]
+                    and active_parent
+                )
                 active_bucket = stats.children
             except (IndexError, TypeError):
                 active = False
@@ -126,7 +163,8 @@ class AustinController(Controller):
                             if active
                             else f"<inactive>{escape(stats.label.function)}</inactive>"
                         )
-                        + f" <inactive>(<filename>{escape(stats.label.filename)}</filename>:<lineno>{stats.label.line}</lineno>)</inactive>"
+                        + f" <inactive>(<filename>{escape(stats.label.filename)}</filename>"
+                        f":<lineno>{stats.label.line}</lineno>)</inactive>"
                     ),
                 ]
             )
@@ -134,20 +172,22 @@ class AustinController(Controller):
             if not children_stats:
                 return
             for child_stats in children_stats[:-1]:
-                add_frame_stats(
+                _add_frame_stats(
                     child_stats,
                     prefix + "├─ ",
                     prefix + "│  ",
                     level + 1,
                     active_bucket,
+                    active,
                 )
 
-            add_frame_stats(
+            _add_frame_stats(
                 children_stats[-1],
                 prefix + "└─ ",
                 prefix + "   ",
                 level + 1,
                 active_bucket,
+                active,
             )
 
         thread_stats = self.model.stats.processes[int(pid)].threads[thread]
@@ -155,13 +195,14 @@ class AustinController(Controller):
         children = [stats for _, stats in thread_stats.children.items()]
         if children:
             for stats in children[:-1]:
-                add_frame_stats(stats, "├─ ", "│  ", 0, thread_stats.children)
+                _add_frame_stats(stats, "├─ ", "│  ", 0, thread_stats.children)
 
-            add_frame_stats(children[-1], "└─ ", "   ", 0, thread_stats.children)
+            _add_frame_stats(children[-1], "└─ ", "   ", 0, thread_stats.children)
 
         self.view.table.set_data(frame_stats)
 
-    def set_thread_stack(self):
+    def set_thread_stack(self) -> None:
+        """Set the thread stack."""
         if not self.model.threads:
             return
 
@@ -172,7 +213,8 @@ class AustinController(Controller):
 
         self._last_timestamp = self.model.stats.timestamp
 
-    def set_thread(self):
+    def set_thread(self) -> bool:
+        """Set the thread to display."""
         if not self.model.threads:
             self.view.thread_num.set_text("--")
             return True
@@ -189,14 +231,16 @@ class AustinController(Controller):
 
         return True
 
-    def on_start(self, data=None):
+    def on_start(self, data: Any = None) -> None:
+        """Start event."""
         self._formatter, self._scaler = (
             (self.view.fmt_mem, self.view.scale_memory)
             if self.view.mode == AustinProfileMode.MEMORY
             else (self.view.fmt_time, self.view.scale_time)
         )
 
-    def on_update(self, data=None):
+    def on_update(self, data: Any = None) -> bool:
+        """Update event."""
         # Samples count
         self.view.samples.set_text(self.model.samples_count)
 
@@ -208,7 +252,8 @@ class AustinController(Controller):
 
         return False
 
-    def on_change_thread(self, direction: ThreadNav):
+    def on_change_thread(self, direction: ThreadNav) -> bool:
+        """Change thread."""
         prev_index = self._thread_index
 
         self._thread_index = max(
@@ -220,18 +265,28 @@ class AustinController(Controller):
 
         return False
 
-    def on_toggle_full_mode(self, data=None):
+    def on_toggle_full_mode(self, data: Any = None) -> None:
+        """Toggle full mode."""
         self._full_mode = not self._full_mode
         self.set_thread_stack()
 
-    def on_save(self, data=None):
-        pid = self.view._system_controller._child_proc.pid
-        filename = f"austin_{int(time())}_{pid}.aprof"
-        try:
-            with open(filename, "w") as fout:
-                self.model.stats.dump(fout)
-                self.view.notification.set_text(f"Stats saved as {filename}")
-        except IOError as e:
-            self.view.notification.set_text(f"Failed to save stats: {e}")
+    def on_save(self, data: Any = None) -> bool:
+        """Save the collected stats."""
+
+        def _dump_stats() -> None:
+            pid = self.view._system_controller._child_proc.pid
+            filename = f"austin_{int(time())}_{pid}.aprof"
+            try:
+                buffer = StringIO()
+                self.model.stats.dump(buffer)
+                with open(filename, "w") as fout:
+                    fout.write(buffer.getvalue().replace(" 0 0\n", "\n"))
+                self.view.notification.set_text(
+                    self.view.markup(f"Stats saved as <running>{filename}</running> 📝 ")
+                )
+            except IOError as e:
+                self.view.notification.set_text(f"Failed to save stats: {e}")
+
+        asyncio.get_event_loop().run_in_executor(None, _dump_stats)
 
         return True

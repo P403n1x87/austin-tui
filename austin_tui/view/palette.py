@@ -22,32 +22,43 @@
 
 
 import curses
-from typing import Any
+from typing import Dict, Tuple
 
 
 class PaletteError(Exception):
+    """Palette generic error."""
+
     pass
 
 
 class Palette:
-    def __init__(self):
-        self._colors = {"default": 0}
-        self._color_pairs = {}
+    """Palette object.
 
-    def add_color(self, name, fg=-1, bg=-1):
+    This is essentially a wrapper around the concept of curses color pairs.
+    """
+
+    def __init__(self) -> None:
+        self._colors = {"default": 0}
+        self._color_pairs: Dict[int, Tuple[int, int]] = {}
+
+    def add_color(self, name: str, fg: int = -1, bg: int = -1) -> None:
+        """Add a color pair to the palette."""
         color_id = len(self._colors)
         self._colors[name] = color_id
         self._color_pairs[color_id] = (int(fg), int(bg))
 
-    def get_color(self, name):
+    def get_color(self, name: str) -> int:
+        """Get the color by name."""
         try:
             return getattr(self, name)
         except KeyError:
             raise PaletteError(f"The palette has no color '{name}'")
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> int:
+        """Convenience accessor for colors from the palette."""
         return self._colors[name]
 
-    def init(self):
+    def init(self) -> None:
+        """Initialise the curses color pairs."""
         for cid, pair in self._color_pairs.items():
             curses.init_pair(cid, *pair)

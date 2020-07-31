@@ -3,7 +3,7 @@ import tempfile
 import nox
 
 
-nox.options.sessions = "lint", "tests"
+nox.options.sessions = ["lint"]
 
 
 # ---- Configuration ----
@@ -14,7 +14,7 @@ SUPPORTED_PYTHON_VERSIONS = ["3.6", "3.7", "3.8"]
 PYTEST_OPTIONS = ["-vvvs", "--cov=austin_tui", "--cov-report", "term-missing"]
 
 LINT_LOCATIONS = ["austin_tui", "test", "noxfile.py"]
-LINT_EXCLUDES = []
+LINT_EXCLUDES = ["austin_tui/__init__.py"]
 
 MYPY_LOCATIONS = LINT_LOCATIONS[:1]
 
@@ -53,7 +53,7 @@ def lint(session):
         "flake8-docstrings",
         "flake8-import-order",
     )
-    session.run("flake8", *LINT_LOCATIONS)  # , "--exclude", *LINT_EXCLUDES)
+    session.run("flake8", *LINT_LOCATIONS, "--exclude", *LINT_EXCLUDES)
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)

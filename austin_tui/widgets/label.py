@@ -20,21 +20,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import curses
 from collections import deque
+import curses
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 from austin_tui.widgets import Widget
+from austin_tui.widgets.markup import AttrString
 
 
 class TextAlign(Enum):
+    """Text alignment."""
+
     LEFT = ""
     RIGHT = ">"
     CENTER = "^"
 
 
-def ell(text, length, sep=".."):
+def ell(text: str, length: int, sep: str = "..") -> str:
+    """Ellipsize a string to a given length using the given separator."""
     if len(text) <= length:
         return text
 
@@ -50,18 +54,20 @@ def ell(text, length, sep=".."):
 
 
 class Label(Widget):
+    """Label widget."""
+
     def __init__(
         self,
-        name,
-        width=None,
-        height=1,
-        text="",
-        align=TextAlign.LEFT,
-        color="default",
-        reverse=False,
-        bold=False,
-        ellipsize=True,
-    ):
+        name: str,
+        width: int = 0,
+        height: int = 1,
+        text: Any = "",
+        align: Any = TextAlign.LEFT,
+        color: str = "default",
+        reverse: bool = False,
+        bold: bool = False,
+        ellipsize: bool = True,
+    ) -> None:
         super().__init__(name, width, height)
 
         self.color = color
@@ -73,7 +79,12 @@ class Label(Widget):
             align if isinstance(align, TextAlign) else getattr(TextAlign, align.upper())
         )
 
-    def set_text(self, text: Any) -> None:
+    def set_text(self, text: Any) -> bool:
+        """Set the label text."""
+        if isinstance(text, AttrString) and self.text is not text:
+            self.text = text
+            return self.draw()
+
         new_text = str(text)
         if new_text != self.text:
             self.text = new_text
@@ -81,29 +92,33 @@ class Label(Widget):
 
         return False
 
-    def set_color(self, color: str):
+    def set_color(self, color: str) -> bool:
+        """Set the label color."""
         if color != self.color:
             self.color = color
             return self.draw()
 
         return False
 
-    def set_bold(self, bold=True):
+    def set_bold(self, bold: bool = True) -> bool:
+        """Set the label appearance to bold."""
         if bold != self.bold:
-            self.bold = bold and curses.A_BOLD or 0
+            self.bold = bold
             return self.draw()
 
         return False
 
     @property
-    def attr(self):
+    def attr(self) -> int:
+        """The label attributes."""
         return (
             curses.color_pair(self.view.palette.get_color(self.color))
             | (self.bold and curses.A_BOLD or 0)
             | (self.reverse and curses.A_REVERSE or 0)
         )
 
-    def draw(self):
+    def draw(self) -> bool:
+        """Draw the label."""
         win = self.win.get_win()
         if not win:
             return False
@@ -111,6 +126,14 @@ class Label(Widget):
         width = self.width or (max(0, self.parent.width - self.x - 1))
         if not width:
             return False
+
+        if isinstance(self.text, AttrString):
+            x = self.x
+            if self.align == TextAlign.RIGHT and len(self.text) < width:
+                x += width - len(self.text)
+            elif self.align == TextAlign.CENTER and len(self.text) < width:
+                x += (width - len(self.text)) >> 1
+            return self.text.write(win, self.y, x, width) > 0
 
         attr = self.attr
         format = "{:" + f"{self.align.value}{width}" + "}"
@@ -135,7 +158,16 @@ class Label(Widget):
 
 
 class Line(Label):
-    def __init__(self, name, text="", color="default", reverse=False, bold=False):
+    """A line that spans the width of its container."""
+
+    def __init__(
+        self,
+        name: str,
+        text: str = "",
+        color: str = "default",
+        reverse: bool = False,
+        bold: bool = False,
+    ) -> None:
         super().__init__(
             name=name,
             text=text,
@@ -145,25 +177,27 @@ class Line(Label):
             ellipsize=False,
         )
 
-    def refresh(self):
-        super().refresh()
-
 
 class ToggleLabel(Label):
+    """Toggle label.
+
+    A convenience label that can toggle between two different colors.
+    """
+
     def __init__(
         self,
-        name,
-        width=None,
-        height=1,
-        text="",
-        align=TextAlign.LEFT,
-        on="default",
-        off="default",
-        state="0",
-        reverse=False,
-        bold=False,
-        ellipsize=True,
-    ):
+        name: str,
+        width: int = 0,
+        height: int = 1,
+        text: str = "",
+        align: TextAlign = TextAlign.LEFT,
+        on: str = "default",
+        off: str = "default",
+        state: str = "0",
+        reverse: bool = False,
+        bold: bool = False,
+        ellipsize: bool = True,
+    ) -> None:
         self._colors = (off, on)
         self._state = int(state)
 
@@ -179,21 +213,36 @@ class ToggleLabel(Label):
             ellipsize=ellipsize,
         )
 
-    def toggle(self):
+    def toggle(self) -> bool:
+        """Toggle the color."""
         self._state = 1 - self._state
         return self.set_color(self._colors[self._state])
 
 
 class BarPlot(Label):
+    """A bar plot widget.
+
+    If a ``scale`` is given, it is used to scale the values. Otherwise
+    autoscaling is performed, which can also be enforced with the ``auto``
+    argument. The plot can be initialised with an initial value via the ``init``
+    argument.
+    """
 
     STEPS = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
 
     @staticmethod
-    def bar_icon(i):
+    def _bar_icon(i: float) -> str:
         i = max(0, min(i, 1))
         return BarPlot.STEPS[int(i * (len(BarPlot.STEPS) - 1))]
 
-    def __init__(self, name, width=8, scale=None, init=None, color="default"):
+    def __init__(
+        self,
+        name: str,
+        width: int = 8,
+        scale: Optional[int] = None,
+        init: Optional[int] = None,
+        color: str = "default",
+    ) -> None:
         super().__init__(name, width=8, color=color, ellipsize=False)
 
         self._values = deque(
@@ -202,15 +251,16 @@ class BarPlot(Label):
         self.scale = int(scale or 0)
         self.auto = not scale
 
-    def _plot(self):
+    def _plot(self) -> bool:
         return self.set_text(
             "".join(
-                BarPlot.bar_icon(v / self.scale if self.scale else v)
+                BarPlot._bar_icon(v / self.scale if self.scale else v)
                 for v in self._values
             )
         )
 
-    def push(self, value):
+    def push(self, value: int) -> bool:
+        """Push a new value to the plot."""
         self._values.append(value)
         if self.auto:
             self.scale = max(self._values)

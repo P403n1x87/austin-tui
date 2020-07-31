@@ -21,14 +21,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import curses
+from typing import Optional, Tuple
 
-from austin_tui.widgets import Container
+from austin_tui.widgets import Container, Widget
 
 
 class ScrollView(Container):
-    def __init__(self, name):
+    """Scroll view container widget.
+
+    This is essentially a wrapper around the curses pad object. The drawing of
+    a scroll bar is taken care of.
+    """
+
+    def __init__(self, name: str) -> None:
         super().__init__(name)
-        self._win = None
+        self._win: Optional[curses._CursesWindow] = None
 
         self.win = self
 
@@ -38,32 +45,43 @@ class ScrollView(Container):
         self.w = 1
         self.h = 1
 
-    def get_win(self):
+    def get_win(self) -> Optional["curses._CursesWindow"]:
+        """Get the underlying curses pad.
+
+        Use with care.
+        """
         return self._win
 
-    def add_child(self, child):
+    def add_child(self, child: Widget) -> None:
+        """Add the scroll view child widget."""
         child.parent = self
         child.win = self
 
         self._children_map = {child.name: 0}
         self._children = [child]
 
-    def show(self):
+    def show(self) -> None:
+        """Show the scroll view."""
         super().show()
 
         if self._win is not None:
             return
 
         self._win = curses.newpad(1, 1)
-        self._win.scrollok(1)
-        self._win.keypad(1)
+        self._win.scrollok(True)
+        self._win.keypad(True)
         self._win.timeout(0)
-        self._win.nodelay(1)
+        self._win.nodelay(True)
 
-    def get_inner_size(self):
+    def get_inner_size(self) -> Tuple[int, int]:
+        """Get the scroll view inner size.
+
+        As per curses convention, the returned value is (_height_, _width_).
+        """
         return self.height, self.width - 1
 
-    def scroll_down(self, lines=1):
+    def scroll_down(self, lines: int = 1) -> None:
+        """Scroll the view down."""
         h = self.height
 
         if self.curr_y + h == self.h:
@@ -73,9 +91,10 @@ class ScrollView(Container):
         if self.curr_y + h > self.h:
             self.curr_y = self.h - h
 
-        self.draw_scroll_bar()
+        self._draw_scroll_bar()
 
-    def scroll_up(self, lines=1):
+    def scroll_up(self, lines: int = 1) -> None:
+        """Scroll the view up."""
         if self.curr_y == 0:
             return
 
@@ -83,12 +102,21 @@ class ScrollView(Container):
         if self.curr_y < 0:
             self.curr_y = 0
 
-        self.draw_scroll_bar()
+        self._draw_scroll_bar()
 
-    def get_view_size(self):
+    def get_view_size(self) -> Tuple[int, int]:
+        """Get the scroll view size.
+
+        As per curses convention, the returned value is (_height_, _width_).
+        """
         return self.h, self.w
 
-    def set_view_size(self, h, w):
+    def set_view_size(self, h: int, w: int) -> None:
+        """Set the view size.
+
+        This is the outer size of the view. The actual inner space is computed
+        automatically to allow extra space for the scroll bar.
+        """
         if self._win is None:
             return
 
@@ -98,7 +126,7 @@ class ScrollView(Container):
         if self.h != oh or self.w != ow:
             self._win.resize(self.h, self.w)  # Scroll bar
 
-    def draw_scroll_bar(self):
+    def _draw_scroll_bar(self) -> None:
         if not self._win:
             return
 
@@ -114,7 +142,8 @@ class ScrollView(Container):
             bar_y = int(self.curr_y / self.h * h)
             self.parent.win._win.vline(y0 + bar_y, x, curses.ACS_CKBOARD, bar_h)
 
-    def resize(self):
+    def resize(self) -> bool:
+        """Resize the scroll view."""
         refresh = super().resize()
 
         self.set_view_size(self.h, self.w)
@@ -128,7 +157,8 @@ class ScrollView(Container):
 
         return refresh
 
-    def draw(self):
+    def draw(self) -> bool:
+        """Draw the scroll view."""
         if self._win is None:
             return False
 
@@ -137,11 +167,12 @@ class ScrollView(Container):
         if self.curr_y + h > self.h:
             self.curr_y = self.h - h
 
-        self.draw_scroll_bar()
+        self._draw_scroll_bar()
 
         return True
 
-    def refresh(self):
+    def refresh(self) -> None:
+        """Refresh the scroll view."""
         h, w = self.height, self.width
 
         if self.curr_y + h > self.h:
@@ -152,3 +183,5 @@ class ScrollView(Container):
         y2, x2 = y1 + h - 1, x1 + w - 1
 
         self._win.refresh(self.curr_y, self.curr_x, y1, x1, y2, x2)
+        for child in self._children:
+            child.refresh()

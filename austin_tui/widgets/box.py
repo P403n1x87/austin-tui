@@ -20,7 +20,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from austin_tui.widgets import Container
+from typing import Any
+
+from austin_tui.widgets import Container, Widget
 
 
 _COORDS = ("x", "y")
@@ -28,7 +30,12 @@ _SIZES = ("width", "height")
 
 
 class Box(Container):
-    def __init__(self, name, flow):
+    """A flex box widget.
+
+    The ``flow`` is either ``h``orizontal or ``v``ertical.
+    """
+
+    def __init__(self, name: str, flow: str) -> None:
         super().__init__(name)
 
         if flow[0] not in ["v", "h"]:
@@ -41,7 +48,8 @@ class Box(Container):
         self._expand[self.flow] = False
         self._expand[1 - self.flow] = False
 
-    def add_child(self, child):
+    def add_child(self, child: Widget) -> None:
+        """Add child to the box."""
         super().add_child(child)
 
         rsize = _SIZES[self.flow]
@@ -57,7 +65,8 @@ class Box(Container):
         for _ in range(2):
             self._expand[_] |= child._expand[_]
 
-    def resize(self):
+    def resize(self) -> bool:
+        """Resize the box."""
         refresh = super().resize()
 
         # fixed
@@ -69,7 +78,7 @@ class Box(Container):
 
         touched = set()
 
-        def set_property(obj, prop, value):
+        def _set_property(obj: Widget, prop: str, value: Any) -> None:
             old_val = getattr(obj, prop)
             if old_val != value:
                 setattr(obj, prop, value)
@@ -77,8 +86,8 @@ class Box(Container):
 
         # set the fixed size and coordinate straight away
         for child in self._children:
-            set_property(child, fsize, getattr(self, fsize))
-            set_property(child, fcoord, getattr(self, fcoord))
+            _set_property(child, fsize, getattr(self, fsize))
+            _set_property(child, fcoord, getattr(self, fcoord))
 
         # compute the height of expanding widgets
         dimensions = [
@@ -97,9 +106,9 @@ class Box(Container):
         # place and resize children
         pos = getattr(self, rcoord)
         for child in self._children:
-            set_property(child, rcoord, pos)
+            _set_property(child, rcoord, pos)
             if child._expand[self.flow]:
-                set_property(child, rsize, variable_dimensions.pop(0))
+                _set_property(child, rsize, variable_dimensions.pop(0))
 
             if child.name in touched:
                 refresh |= child.resize()

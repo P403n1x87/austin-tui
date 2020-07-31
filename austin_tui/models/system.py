@@ -21,44 +21,51 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
-import typing
 
-from psutil import NoSuchProcess
-
-
-Seconds = typing.NewType("Seconds", float)
-Percentage = typing.NewType("Percentage", float)
-Bytes = typing.NewType("Bytes", int)
+from austin_tui.models import Model
+from psutil import NoSuchProcess, Process
 
 
-class SystemModel:
-    def __init__(self):
-        self._start_time: Seconds = None
-        self._end_time: Seconds = None
+Seconds = float
+Percentage = float
+Bytes = int
+
+
+class SystemModel(Model):
+    """System statistics model."""
+
+    def __init__(self) -> None:
+        self._start_time: Seconds = 0
+        self._end_time: Seconds = 0
 
         self._max_mem: Bytes = 0
 
-    def start(self):
+    def start(self) -> None:
+        """Start the model."""
         self._start_time = time.time()
 
-    def stop(self):
+    def stop(self) -> None:
+        """Stop the model."""
         self._end_time = time.time()
 
     @property
     def duration(self) -> Seconds:
+        """Get the sampling duration."""
         return (
             (self._end_time or time.time()) - self._start_time
             if self._start_time
             else 0
         )
 
-    def get_cpu(self, process) -> Percentage:
+    def get_cpu(self, process: Process) -> Percentage:
+        """Get the process CPU usage."""
         try:
             return int(process.cpu_percent())
         except NoSuchProcess:
             return 0
 
-    def get_memory(self, process) -> Bytes:
+    def get_memory(self, process: Process) -> Bytes:
+        """Get the process memory."""
         try:
             mem = process.memory_full_info()[0]
             self._max_mem = max(mem, self._max_mem)
@@ -67,5 +74,6 @@ class SystemModel:
             return 0
 
     @property
-    def max_memory(self):
+    def max_memory(self) -> Bytes:
+        """Return the maximum memory usage seen so far."""
         return self._max_mem

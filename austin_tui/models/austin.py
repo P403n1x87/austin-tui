@@ -20,54 +20,87 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from austin.stats import AustinStats, InvalidSample, Sample
 from time import time
+from typing import Any, Dict, List, Optional, Tuple
+
+from austin.stats import AustinStats, InvalidSample, Sample
+from austin_tui.models import Model
 
 
 class OrderedSet:
-    def __init__(self):
-        self._items = []
-        self._map = {}
+    """Ordered set."""
 
-    def __contains__(self, thread):
-        return thread in self._map
+    def __init__(self) -> None:
+        self._items: List[Any] = []
+        self._map: Dict[Any, int] = {}
 
-    def __getitem__(self, i):
+    def __contains__(self, element: Any) -> bool:
+        """Check if the set contains the element."""
+        return element in self._map
+
+    def __getitem__(self, i: Any) -> Any:
+        """Get the i-th item or the index of the given hashable object."""
         return self._items[i] if isinstance(i, int) else self._map[i]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """The number of elements in the set."""
         return len(self._items)
 
-    def add(self, thread):
-        if thread not in self._map:
-            self._map[thread] = len(self._items)
-            self._items.append(thread)
+    def add(self, element: Any) -> None:
+        """Add an element to the set.
 
-    def __bool__(self):
+        If the element is already in the set, nothing happens.
+        """
+        if element not in self._map:
+            self._map[element] = len(self._items)
+            self._items.append(element)
+
+    def __bool__(self) -> bool:
+        """Convert to boolean."""
         return bool(self._items)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Representation of the set."""
         return type(self).__name__ + str(self._items)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """Representation of the set."""
         return type(self).__name__ + repr(self._items)
 
 
-class AustinModel:
-    __borg__ = {}
+class AustinModel(Model):
+    """Austin model.
 
-    def __init__(self):
+    This is a borg.
+    """
+
+    __borg__: Dict[str, Any] = {}
+
+    def __init__(self) -> None:
         self.__dict__ = self.__borg__
 
         self._samples = 0
         self._invalids = 0
-        self._last_stack = {}
+        self._last_stack: Dict[str, Sample] = {}
         self._stats = AustinStats()
         self._stats.timestamp = time()
 
+        self._austin_version: Optional[str] = None
+        self._python_version: Optional[str] = None
+
         self._threads = OrderedSet()
 
-    def update(self, raw_sample):
+    def get_versions(self) -> Tuple[Optional[str], Optional[str]]:
+        """Get Austin and Python versions."""
+        return self._austin_version, self._python_version
+
+    def set_versions(self, austin_version: str, python_version: str) -> None:
+        """Set Austin and Python versions."""
+        self._austin_version = austin_version
+        self._python_version = python_version
+
+    def update(self, raw_sample: str) -> None:
+        """Update current statistics with a new sample."""
         try:
             sample = Sample.parse(raw_sample)
             self._stats.update(sample)
@@ -80,21 +113,26 @@ class AustinModel:
         finally:
             self._samples += 1
 
-    def get_last_stack(self, thread_key):
+    def get_last_stack(self, thread_key: str) -> Sample:
+        """Get the last seen stack for the given thread."""
         return self._last_stack[thread_key]
 
     @property
-    def stats(self):
+    def stats(self) -> AustinStats:
+        """The current Austin statistics."""
         return self._stats
 
     @property
-    def threads(self):
+    def threads(self) -> OrderedSet:
+        """The seen threads as ordered set."""
         return self._threads
 
     @property
-    def samples_count(self):
+    def samples_count(self) -> int:
+        """Get the sample count."""
         return self._samples
 
     @property
-    def error_rate(self):
+    def error_rate(self) -> float:
+        """Get the error rate."""
         return self._invalids / self._samples

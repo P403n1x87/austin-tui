@@ -33,4 +33,4 @@ before_script:
 script:
   - export PATH="../austin/src:$PATH"
   - nox
-  - nox -rs coverage
+  # nox -rs coverage

@@ -1,47 +1,3 @@
-# -----------------------------------------------------------------------------
-# --  C SOURCES
-# -----------------------------------------------------------------------------
-
-/autom4te.cache/
-/config/
-Makefile
-Makefile.in
-aclocal.m4
-app.info
-compile
-config.h
-config.h.in
-config.log
-config.status
-configure
-configure.scan
-coverage_report
-depcomp
-install-sh
-libtool
-m4
-missing
-stamp-h1
-*~
-*.log
-*.o
-*.la
-*.so*
-*.a
-.deps
-*.tar*
-*.zip
-*.lo
-*.gcno
-*.gcda
-
-src/austin
-
-
-# -----------------------------------------------------------------------------
-# --  PYTHON SOURCES
-# -----------------------------------------------------------------------------
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -64,6 +20,7 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -82,27 +39,24 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
+.nox/
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *.cover
+*.py,cover
 .hypothesis/
 .pytest_cache/
+cover/
 
 # Translations
 *.mo
 *.pot
 
 # Sphinx documentation
-docs/*build/
-
-# PyBuilder
-target/
-
-# pyenv
-.python-version
+docs/_build/
 
 # Environments
 .env
@@ -113,29 +67,16 @@ ENV/
 env.bak/
 venv.bak/
 
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# -----------------------------------------------------------------------------
-# --  SNAP SOURCES
-# -----------------------------------------------------------------------------
+# Pyre type checker
+.pyre/
 
-/parts/
-/stage/
-/prime/
-/*.snap
+# pytype static type analyzer
+.pytype/
 
-# Snapcraft global state tracking data(automatically generated)
-# https://forum.snapcraft.io/t/location-to-save-global-state/768
-/snap/.snapcraft/
-
-# Source archive packed by `snapcraft cleanbuild` before pushing to the LXD container
-/*_source.tar.bz2
-
-
-# -----------------------------------------------------------------------------
-# -- DEB SOURCES
-# -----------------------------------------------------------------------------
-
-*debhelper*
-debian/austin
-debian/files
-*.substvars
+# Nox
+.nox

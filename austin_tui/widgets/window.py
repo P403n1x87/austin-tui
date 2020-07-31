@@ -21,18 +21,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import curses
+from typing import Optional, Tuple
 
 from austin_tui.widgets import Container
 
 
 class Window(Container):
-    def __init__(self, name):
-        super().__init__(name)
-        self._win = None
+    """Window container.
 
+    This is, essentially, a wrapper around the ``curses.win`` object.
+    """
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
         self.win = self
 
-    def resize(self):
+    def resize(self) -> bool:
+        """Resize the window.
+
+        This is effectively resizing just the child widget, as the window itself
+        is just a logical container.
+        """
         super().resize()
 
         (child,) = self._children
@@ -40,19 +49,19 @@ class Window(Container):
 
         if child.resize():
             self.refresh()
+            return True
 
-    def refresh(self):
-        if self._win:
-            self._win.refresh()
+        return False
 
-    def show(self):
+    def show(self) -> None:
+        """Show the window on screen."""
         if self._win is not None:
             return
 
         self._win = curses.initscr()
         curses.noecho()
         curses.cbreak()
-        self._win.keypad(1)
+        self._win.keypad(True)
         try:
             curses.start_color()
         except Exception:
@@ -69,22 +78,35 @@ class Window(Container):
 
         super().show()
 
-    def hide(self):
+    def hide(self) -> None:
+        """Hide the window.
+
+        Also restore the terminal to a sane status.
+        """
         if self._win is None:
             return
 
-        self._win.keypad(0)
+        self._win.keypad(False)
         curses.echo()
         curses.nocbreak()
         curses.endwin()
 
         self._win = None
 
-    def get_size(self):
+    def get_size(self) -> Tuple[int, int]:
+        """Get the window size.
+
+        As per curses convention this returns the tuple (_height_, _width_).
+        """
         return self._win.getmaxyx()
 
-    def get_win(self):
+    def get_win(self) -> Optional["curses._CursesWindow"]:
+        """Get the underlying curses window.
+
+        Use with care.
+        """
         return self._win
 
-    def is_visible(self):
+    def is_visible(self) -> bool:
+        """Whether the window is visible."""
         return self._win is not None

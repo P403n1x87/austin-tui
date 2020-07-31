@@ -20,11 +20,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 from austin_tui.controllers import Controller, Event
 from austin_tui.models import SystemModel
+from psutil import Process
 
 
-def fmt_time(s):
+def fmt_time(s: int) -> str:
+    """Format microseconds into mm':ss''."""
     m = int(s // 60e6)
     ret = '{:02d}"'.format(round(s / 1e6) % 60)
     if m:
@@ -34,29 +38,40 @@ def fmt_time(s):
 
 
 class SystemEvent(Event):
+    """System controller events."""
+
     START = "on_start"
     UPDATE = "on_update"
     STOP = "on_stop"
 
 
 class SystemController(Controller):
+    """System controller.
+
+    This controller is in charge of the system model and of UI updates with
+    fresh system data (e.g. CPU usage, duration etc...).
+    """
 
     __model__ = SystemModel
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._child_proc = None
 
-    def set_child_process(self, child_process):
+    def set_child_process(self, child_process: Process) -> None:
+        """Set the child process."""
         self._child_proc = child_process
 
-    def on_start(self, data=None):
+    def on_start(self, data: Any = None) -> None:
+        """Start event."""
         self.model.start()
 
-    def on_stop(self, data=None):
+    def on_stop(self, data: Any = None) -> None:
+        """Stop event."""
         self.model.stop()
 
-    def on_update(self, data=None):
+    def on_update(self, data: Any = None) -> None:
+        """Update the UI with system data."""
         self.view.duration.set_text(fmt_time(int(self.model.duration * 1e6)))
 
         cpu = self.model.get_cpu(self._child_proc)

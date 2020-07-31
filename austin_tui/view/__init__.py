@@ -23,27 +23,30 @@
 import asyncio
 import curses
 import sys
-from typing import Any
-
-from importlib_resources import files
-
-from lxml.etree import (
-    parse as parse_xml_stream,
-    fromstring as parse_xml_string,
-    QName,
-    _Comment as Comment,
-)
+from typing import Any, Callable, Dict, Optional, TextIO, Type
 
 from austin_tui.view.palette import Palette
+from austin_tui.widgets import Container, Widget
 import austin_tui.widgets.catalog as catalog
-from austin_tui.widgets.markup import markup
+from austin_tui.widgets.markup import AttrString, markup
+from importlib_resources import files
+from lxml.etree import (
+    _Comment as Comment,
+    Element,
+    fromstring as parse_xml_string,
+    parse as parse_xml_stream,
+    QName,
+)
+
+
+EventHandler = Callable[[Optional[Any]], bool]
 
 
 class _ClassNotFoundError(Exception):
     pass
 
 
-def _find_class(class_name):
+def _find_class(class_name: str) -> Type:
     try:
         # Try to get a class from the standard catalog
         return getattr(catalog, class_name)
@@ -59,28 +62,31 @@ def _find_class(class_name):
 
 
 class ViewBuilderError(Exception):
+    """View builder generic error."""
+
     pass
 
 
-def _issignal(node):
+def _issignal(node: Element) -> bool:
     return QName(node).localname == "signal"
 
 
-def _ispalette(node):
+def _ispalette(node: Element) -> bool:
     return QName(node).localname == "palette"
 
 
-def _validate_ns(node):
+def _validate_ns(node: Element) -> None:
     if QName(node).namespace != "http://austin.p403n1x87.com/ui":
         raise ViewBuilderError(f"Node '{node}' has invalid namespace")
 
 
 class View:
-    def __init__(self, name):
-        self._widgets = {}
+    """View object."""
+
+    def __init__(self, name: str) -> None:
         self._input_event = asyncio.Event()
         self._input_task = asyncio.get_event_loop().create_task(self._input_loop())
-        self._event_handlers = {}
+        self._event_handlers: Dict[str, EventHandler] = {}
 
         self._open = False
 
@@ -88,8 +94,12 @@ class View:
         self.palette = Palette()
         self.root_widget = None
 
-    async def _input_loop(self):
+    async def _input_loop(self) -> None:
+        if not self.root_widget:
+            raise RuntimeError("Missing root widget")
+
         await self._input_event.wait()
+
         while self._open:
             await asyncio.sleep(0.015)
 
@@ -108,7 +118,7 @@ class View:
                 write_exception_to_file(e)
                 raise KeyboardInterrupt()
 
-    def _build(self, node):
+    def _build(self, node: Element) -> Widget:
         _validate_ns(node)
         widget_class = QName(node).localname
         try:
@@ -122,13 +132,19 @@ class View:
 
         return widget
 
-    def connect(self, event, handler):
+    def connect(self, event: str, handler: EventHandler) -> None:
+        """Connect event handlers."""
         self._event_handlers[event] = handler
 
-    def markup(self, text: Any):
+    def markup(self, text: Any) -> AttrString:
+        """Convert a markup string into an attribute string."""
         return markup(str(text), self.palette)
 
-    def open(self):
+    def open(self) -> None:
+        """Open the view."""
+        if not self.root_widget:
+            raise RuntimeError("View has no root widget")
+
         self.root_widget.show()
         self.palette.init()
 
@@ -139,8 +155,9 @@ class View:
         self._open = True
         self._input_event.set()
 
-    def close(self):
-        if not self._open:
+    def close(self) -> None:
+        """Close the view."""
+        if not self._open or not self.root_widget:
             return
 
         self.root_widget.hide()
@@ -148,13 +165,16 @@ class View:
         self._open = False
 
     @property
-    def is_open(self):
+    def is_open(self) -> bool:
+        """Whether the view is open."""
         return self._open
 
 
 class ViewBuilder:
+    """View builder class."""
+
     @staticmethod
-    def _parse(view_node):
+    def _parse(view_node: Element) -> View:
         _validate_ns(view_node)
 
         view_class = QName(view_node).localname
@@ -167,16 +187,16 @@ class ViewBuilder:
         view.root_widget = view._build(root)
         view.connect("KEY_RESIZE", view.root_widget.resize)
 
-        def add_children(widget, node):
+        def _add_children(widget: Container, node: Element) -> None:
             for child in node:
                 if isinstance(child, Comment):
                     continue
                 child_widget = view._build(child)
                 child_widget.win = widget.win
-                add_children(child_widget, child)
+                _add_children(child_widget, child)
                 widget.add_child(child_widget)
 
-        add_children(view.root_widget, root)
+        _add_children(view.root_widget, root)
 
         for node in rest:
             if isinstance(node, Comment):
@@ -205,11 +225,13 @@ class ViewBuilder:
         return view
 
     @staticmethod
-    def from_stream(stream):
+    def from_stream(stream: TextIO) -> View:
+        """Build view from a stream."""
         return ViewBuilder._parse(parse_xml_stream(stream).getroot())
 
     @staticmethod
-    def from_resource(module, resource):
+    def from_resource(module: str, resource: str) -> View:
+        """Build view from a resource file."""
         return ViewBuilder._parse(
             parse_xml_string(
                 files(module).joinpath(resource).read_text(encoding="utf8").encode()
@@ -217,41 +239,41 @@ class ViewBuilder:
         )
 
 
-if __name__ == "__main__":
-
-    class AustinView(View):
-        def on_quit(self, data=None):
-            raise KeyboardInterrupt("Quit event")
-
-        def on_previous_thread(self, data=None):
-            title = self.title.get_text()
-            self.title.set_text(title[1:] + title[0])
-            self.title.refresh()
-
-        def on_next_thread(self, data=None):
-            title = self.title.get_text()
-            self.title.set_text(title[-1] + title[:-1])
-            self.title.refresh()
-
-        def on_full_mode_toggled(self, data=None):
-            pass
-
-        def on_table_up(self, data=None):
-            return self.table.scroll_up()
-
-        def on_table_down(self, data=None):
-            return self.table.scroll_down()
-
-    view = ViewBuilder.from_resource("austin_tui.view", "tui.austinui")
-    exc = None
-    try:
-        view.open()
-
-        loop = asyncio.get_event_loop()
-        loop.run_forever()
-    except Exception as e:
-        exc = e
-    finally:
-        view.close()
-        if exc:
-            raise exc
+# if __name__ == "__main__":
+#
+#     class AustinView(View):
+#         def on_quit(self, data=None):
+#             raise KeyboardInterrupt("Quit event")
+#
+#         def on_previous_thread(self, data=None):
+#             title = self.title.get_text()
+#             self.title.set_text(title[1:] + title[0])
+#             self.title.refresh()
+#
+#         def on_next_thread(self, data=None):
+#             title = self.title.get_text()
+#             self.title.set_text(title[-1] + title[:-1])
+#             self.title.refresh()
+#
+#         def on_full_mode_toggled(self, data=None):
+#             pass
+#
+#         def on_table_up(self, data=None):
+#             return self.table.scroll_up()
+#
+#         def on_table_down(self, data=None):
+#             return self.table.scroll_down()
+#
+#     view = ViewBuilder.from_resource("austin_tui.view", "tui.austinui")
+#     exc = None
+#     try:
+#         view.open()
+#
+#         loop = asyncio.get_event_loop()
+#         loop.run_forever()
+#     except Exception as e:
+#         exc = e
+#     finally:
+#         view.close()
+#         if exc:
+#             raise exc
