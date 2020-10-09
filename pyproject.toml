@@ -1,0 +1,77 @@
+# This file is part of "austin-tui" which is released under GPL.
+#
+# See file LICENCE or go to http://www.gnu.org/licenses/ for full license
+# details.
+#
+# austin-tui is a Python wrapper around Austin, the CPython frame stack
+# sampler.
+#
+# Copyright (c) 2018-2020 Gabriele N. Tornetta <phoenix1987@gmail.com>.
+# All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+[tool.poetry]
+name = "austin-tui"
+version = "0.1.0"
+description = "The top-like text-based user interface for Austin"
+license = "GPL-3.0-or-later"
+authors = ["Gabriele N. Tornetta <phoenix1987@gmail.com>"]
+readme = "README.md"
+homepage = "https://github.com/P403n1x87/austin-tui"
+repository = "https://github.com/P403n1x87/austin-tui"
+documentation = "https://austin-tui.readthedocs.io"
+keywords = ["performance", "profiling", "testing", "development"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+]
+
+[tool.poetry.scripts]
+austin-tui = "austin_tui.__main__:main"
+
+[tool.poetry.dependencies]
+python = ">=3.6"
+austin-python = "^0.1.0"
+windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
+lxml = "^4.5.1"
+importlib-resources = "^2.0.1"
+
+[tool.poetry.dev-dependencies]
+coverage = {extras = ["toml"], version = "*"}
+pytest = ">=5.4.2"
+pytest-cov = ">=2.8.1"
+sphinx = "^3.0.4"
+sphinx-autodoc-typehints = "^1.10.3"
+nox = "^2020.5.24"
+mypy = "^0.770"
+codecov = "^2.1.3"
+
+[tool.poetry.urls]
+issues = "https://github.com/P403n1x87/austin-tui/issues"
+
+[tool.coverage.run]
+branch = true
+source = ["austin_tui"]
+
+[tool.coverage.report]
+show_missing = true
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

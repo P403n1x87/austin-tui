@@ -1,0 +1,9 @@
+[flake8]
+select = ANN,B,B9,C,D,E,F,W,I
+ignore = ANN101,B950,D100,D104,D107,E203,E402,E501,F401,W503,W606
+max-line-length = 80
+docstring-convention = google
+import-order-style = google
+per-file-ignores =
+  test/*:ANN,D
+  noxfile.py:ANN,D

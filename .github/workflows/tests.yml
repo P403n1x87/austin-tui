@@ -1,0 +1,76 @@
+name: Tests
+on: push
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    name: Tests on ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: main
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: x64
+
+      - name: Checkout Austin development branch
+        uses: actions/checkout@master
+        with:
+          repository: P403n1x87/austin
+          ref: devel
+          path: austin
+
+      - name: Compile Austin on Linux
+        run: |
+          cd $GITHUB_WORKSPACE/austin
+          gcc -Wall -O3 -Os -s -pthread src/*.c -o src/austin
+        if: startsWith(matrix.os, 'ubuntu')
+
+      - name: Compile Austin on Windows
+        run: |
+          cd $env:GITHUB_WORKSPACE/austin
+          gcc.exe -O3 -o src/austin.exe src/*.c -lpsapi -Wall -Os -s
+        if: startsWith(matrix.os, 'windows')
+
+      - name: Compile Austin on macOS
+        run: |
+          cd $GITHUB_WORKSPACE/austin
+          gcc -Wall -O3 -Os src/*.c -o src/austin
+        if: startsWith(matrix.os, 'macos')
+
+      - run: pip install nox==2020.5.24
+      - run: pip install poetry==1.0.5
+
+      - name: Run nox on Linux
+        run: |
+          cd $GITHUB_WORKSPACE/main
+          export PATH="$GITHUB_WORKSPACE/austin/src:$PATH"
+          nox
+        if: "startsWith(matrix.os, 'ubuntu')"
+
+      - name: Run nox on macOS
+        run: |
+          cd $GITHUB_WORKSPACE/main
+          export PATH="$GITHUB_WORKSPACE/austin/src:$PATH"
+          sudo nox
+        if: startsWith(matrix.os, 'macos')
+
+      - name: Run nox on Windows
+        run: |
+          cd $env:GITHUB_WORKSPACE/main
+          $env:PATH="$env:GITHUB_WORKSPACE/austin/src;$env:PATH"
+          nox
+        if: "startsWith(matrix.os, 'windows')"
+
+      - name: Publish coverage metrics
+        run: |
+          cd $GITHUB_WORKSPACE/main
+          nox -rs coverage
+        if: startsWith(matrix.os, 'ubuntu')
+        env:
+          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}

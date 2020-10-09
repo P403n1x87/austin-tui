@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- This file is part of "austin-tui" which is released under GPL.
+
+See file LICENCE or go to http://www.gnu.org/licenses/ for full license
+details.
+
+austin-tui is top-like TUI for Austin.
+
+Copyright (c) 2018-2020 Gabriele N. Tornetta <phoenix1987@gmail.com>.
+All rights reserved.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
+
+<aui:AustinView xmlns:aui="http://austin.p403n1x87.com/ui" name="austin-tui">
+  <aui:Window name="main">
+    <aui:Box name="main_box" flow="vertical">
+      <aui:Box name="info_box" flow="horizontal">
+        <aui:Box name="logo_box" flow="vertical">
+          <aui:Label name="title"
+            text="Austin  TUI"
+            align="center"
+            width="15"
+            height="1"
+            bold="true" />
+
+          <aui:Label name="logo"
+            text="_________\n⎝__⎠ ⎝__⎠"
+            align="center"
+            width="15"
+            height="3"
+            color="stopped"
+            bold="true "/>
+        </aui:Box>
+
+        <aui:Box name="inner_info_box" flow="vertical">
+          <aui:Label name="profile_mode"
+            text="Time Mode"
+            bold="true" />
+
+          <aui:Box name="inner_info_box_1" flow="horizontal">
+            <aui:Label name="pid_label" text="PID" width="6" />
+            <aui:Label name="pid"
+              align="right"
+              width="6"
+              bold="true" />
+
+            <aui:Label name="cmd_line_label" text="CMD " align="right" width="6" />
+            <aui:Label name="cmd_line"
+              bold="true" />
+          </aui:Box>
+
+          <aui:Box name="inner_info_box_2" flow="horizontal">
+            <aui:Label name="thread_name_label" text="TID" width="8" />
+            <aui:Label name="thread_name"
+              width="20"
+              bold="true" />
+
+            <aui:Label name="thread_num"
+              align="center"
+              width="5"
+              text="1"
+              color="thread"
+              bold="true" />
+            <aui:Label name="of" align="center" width="4" text="of" bold="true" />
+            <aui:Label name="thread_total"
+              align="center"
+              width="5"
+              text="2" />
+
+            <aui:Label name="cpu_label" align="right" text="CPU" width="5" />
+            <aui:Label name="cpu"
+              align="right"
+              width="6" />
+            <aui:BarPlot name="cpu_plot"
+              scale="100"
+              init="0"
+              color="cpu" />
+          </aui:Box>
+
+          <aui:Box name="inner_info_box_3" flow="horizontal">
+            <aui:Label name="samples_label" text="Samples" width="8" />
+            <aui:Label name="samples"
+              align="right"
+              width="10"
+              bold="true" />
+
+            <aui:Label name="duration_label" align="right" text="Duration" width="10" />
+            <aui:Label name="duration"
+              align="right"
+              width="10"
+              bold="true" />
+
+            <aui:Label name="mem_label" align="right" text="MEM" width="9" />
+            <aui:Label name="mem"
+              align="right"
+              width="6" />
+            <aui:BarPlot name="mem_plot"
+              scale="100"
+              init="0"
+              color="mem" />
+          </aui:Box>
+        </aui:Box>
+      </aui:Box>
+
+      <aui:Box name="table_header" flow="h">
+        <aui:Label name="own"
+          text="OWN"
+          align="center"
+          width="8"
+          bold="true"
+          reverse="true" />
+        <aui:Label name="total"
+          text="TOTAL"
+          align="center"
+          width="8"
+          bold="true"
+          reverse="true" />
+        <aui:Label name="pown"
+          text="%OWN"
+          align="center"
+          width="8"
+          bold="true"
+          reverse="true" />
+        <aui:Label name="ptotal"
+          text="%TOTAL"
+          align="center"
+          width="8"
+          bold="true"
+          reverse="true" />
+        <aui:Label name="function"
+          text=" FUNCTION"
+          bold="true"
+          reverse="true" />
+      </aui:Box>
+
+      <aui:ScrollView name="stats_view">
+        <aui:Table name="table" columns="5" />
+      </aui:ScrollView>
+
+      <aui:CommandBar name="command_bar">
+        <aui:Label name="quit_cmd"
+          text="Q"
+          align="center"
+          width="3"
+          color="cmd_off" />
+        <aui:Label name="quit_label"
+          text="Quit"
+          width="6"
+          align="center" />
+
+        <aui:Label name="prev_thread_cmd"
+          text="←"
+          align="center"
+          width="3"
+          color="cmd_off" />
+        <aui:Label name="prev_thread_label"
+          text="PrevThread"
+          width="12"
+          align="center" />
+
+        <aui:Label name="next_thread_cmd"
+          text="→"
+          align="center"
+          width="3"
+          color="cmd_off" />
+        <aui:Label name="next_thread_label"
+          text="NextThread"
+          width="12"
+          align="center" />
+
+        <aui:ToggleLabel name="full_mode_cmd"
+          text="F"
+          align="center"
+          width="3"
+          on="cmd_on"
+          off="cmd_off"
+          state="0" />
+        <aui:Label name="full_mode_label"
+          text="Full Mode"
+          width="11"
+          align="center" />
+
+        <aui:Label name="save_cmd"
+          text="S"
+          align="center"
+          width="3"
+          color="cmd_off" />
+        <aui:Label name="save_label"
+          text="Save"
+          width="6"
+          align="center" />
+
+        <aui:Label name="notification"
+          color="notify"
+          align="right" />
+
+      </aui:CommandBar>
+    </aui:Box>
+  </aui:Window>
+
+  <!-- Signal mappings -->
+
+  <aui:signal key="q" handler="on_quit"              />
+  <aui:signal key="f" handler="on_full_mode_toggled" />
+  <aui:signal key="s" handler="on_save"              />
+
+  <aui:signal key="KEY_LEFT"  handler="on_previous_thread" />
+  <aui:signal key="KEY_RIGHT" handler="on_next_thread"     />
+
+  <aui:signal key="KEY_UP"   handler="on_table_up"   />
+  <aui:signal key="KEY_DOWN" handler="on_table_down" />
+
+  <aui:signal key="KEY_PPAGE" handler="on_table_pgup"   />
+  <aui:signal key="KEY_NPAGE" handler="on_table_pgdown" />
+
+  <!-- Palette -->
+
+  <aui:palette>
+    <aui:color name="stopped"  fg="1"   />
+    <aui:color name="running"  fg="10"  />
+    <aui:color name="cpu"      fg="4"   />
+    <aui:color name="mem"      fg="2"   />
+    <aui:color name="thread"   fg="11"  />
+    <aui:color name="inactive" fg="242" />
+    <aui:color name="notify"   fg="246" />
+
+    <aui:color name="heat20"   fg="-1"  />
+    <aui:color name="heat40"   fg="226" />
+    <aui:color name="heat60"   fg="208" />
+    <aui:color name="heat80"   fg="202" />
+    <aui:color name="heat100"  fg="196" />
+
+    <aui:color name="iheat20"  fg="242" />
+    <aui:color name="iheat40"  fg="100" />
+    <aui:color name="iheat60"  fg="130" />
+    <aui:color name="iheat80"  fg="94"  />
+    <aui:color name="iheat100" fg="88"  />
+
+    <aui:color name="cmd_on"   bg="202" />
+    <aui:color name="cmd_off"  bg="18"  />
+
+    <aui:color name="filename" fg="94"  />
+    <aui:color name="lineno"   fg="30"  />
+  </aui:palette>
+</aui:AustinView>
