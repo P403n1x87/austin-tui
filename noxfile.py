@@ -9,7 +9,7 @@ nox.options.sessions = ["lint"]
 # ---- Configuration ----
 
 
-SUPPORTED_PYTHON_VERSIONS = ["3.6", "3.7", "3.8"]
+SUPPORTED_PYTHON_VERSIONS = ["3.6", "3.7", "3.8", "3.9"]
 
 PYTEST_OPTIONS = ["-vvvs", "--cov=austin_tui", "--cov-report", "term-missing"]
 
@@ -38,10 +38,10 @@ def install_with_constraints(session, *args, **kwargs):
 # ---- Sessions ----
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
-def tests(session):
-    session.run("poetry", "install", "-vv", external=True)
-    session.run("poetry", "run", "python", "-m", "pytest", *PYTEST_OPTIONS)
+# @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+# def tests(session):
+#     session.run("poetry", "install", "-vv", external=True)
+#     session.run("poetry", "run", "python", "-m", "pytest", *PYTEST_OPTIONS)
 
 
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)

@@ -70,7 +70,7 @@ jobs:
       - name: Publish coverage metrics
         run: |
           cd $GITHUB_WORKSPACE/main
-          poetry run codecov
+          nox -rs coverage
         if: startsWith(matrix.os, 'ubuntu')
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}

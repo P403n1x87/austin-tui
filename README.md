@@ -80,7 +80,7 @@ Austin TUI can be installed directly from PyPI with
 pip install austin-tui --upgrade
 ~~~
 
-**NOTE** In order for the TUI to work, the Austin binary needs to be on the
+**NOTE** In order for the TUI to work, the Austin 2 binary needs to be on the
 ``PATH`` environment variable. See [Austin
 installation](https://github.com/P403n1x87/austin#installation) instructions to
 see how you can easily install Austin on your platform.
@@ -161,7 +161,7 @@ operation on the bottom-right corner.
 
 # Compatibility
 
-Austin TUI has been tested with Python 3.6-3.8 and is known to work on
+Austin TUI has been tested with Python 3.6-3.9 and is known to work on
 **Linux**, **MacOS** and **Windows**.
 
 Since Austin TUI uses Austin to collect samples, the same note applies here:
