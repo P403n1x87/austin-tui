@@ -23,7 +23,7 @@
 
 [tool.poetry]
 name = "austin-tui"
-version = "0.1.1"
+version = "0.1.2"
 description = "The top-like text-based user interface for Austin"
 license = "GPL-3.0-or-later"
 authors = ["Gabriele N. Tornetta <phoenix1987@gmail.com>"]
