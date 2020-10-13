@@ -24,7 +24,7 @@ import asyncio
 import sys
 from typing import List, Optional
 
-from austin import AustinError
+from austin import AustinError, AustinTerminated
 from austin.aio import AsyncAustin
 from austin.cli import AustinArgumentParser, AustinCommandLineError
 from austin_tui import catch
@@ -102,6 +102,8 @@ class AustinTUI(AsyncAustin):
         """Start Austin and catch any exceptions."""
         try:
             await super().start(args)
+        except AustinTerminated:
+            pass
         except AustinError as e:
             raise KeyboardInterrupt("Failed to start") from e
 
