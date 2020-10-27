@@ -2,7 +2,7 @@
   <br><img src="art/logo.png" alt="Austin TUI" /><br>
 </p>
 
-<h3 align="center">A Top-like Interface for Austin</h3>
+<h3 align="center">A Top-like Interface for [Austin]</h3>
 
 <p align="center">
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Tux_Mono.svg"
@@ -58,8 +58,8 @@
 
 # Synopsis
 
-The Python TUI is a top-like text-based user interface for Austin, written in
-pure Python. Originally planned as a sample application to showcase Austin uses,
+The Python TUI is a top-like text-based user interface for [Austin], written in
+pure Python. Originally planned as a sample application to showcase [Austin] uses,
 it's been promoted to a full-fledged project thanks to great popularity.
 
 <p align="center">
@@ -87,7 +87,7 @@ see how you can easily install Austin on your platform.
 
 # Usage
 
-Once Austin and Austin TUI are installed, you can start using them
+Once [Austin] and Austin TUI are installed, you can start using them
 straight-away. If you want to launch and profile a Python script, say
 `myscript.py`, you can do
 
@@ -101,7 +101,7 @@ or, if `myscript.py` is an executable script,
 austin-tui myscript.py
 ~~~
 
-Like Austin, the TUI can also attach to a running Python application. To analyse
+Like [Austin], the TUI can also attach to a running Python application. To analyse
 the frame stacks of all the processes of a running WSGI server, for example, get
 hold of the PID of the parent process and do
 
@@ -109,7 +109,7 @@ hold of the PID of the parent process and do
 sudo austin-tui -Cp <pid>
 ~~~
 
-The `-C` option will instruct Austin to look for child Python processes, and you
+The `-C` option will instruct [Austin] to look for child Python processes, and you
 will be able to navigate through them with the arrow keys.
 
 > The TUI is based on `python-curses`. The version included with the standard
@@ -164,7 +164,7 @@ operation on the bottom-right corner.
 Austin TUI has been tested with Python 3.6-3.9 and is known to work on
 **Linux**, **MacOS** and **Windows**.
 
-Since Austin TUI uses Austin to collect samples, the same note applies here:
+Since Austin TUI uses [Austin] to collect samples, the same note applies here:
 
 > Due to the **System Integrity Protection** introduced in **MacOS** with El
 > Capitan, Austin cannot profile Python processes that use an executable located
@@ -195,3 +195,5 @@ on BMC or by chipping in a few pennies on
        alt="Buy Me A Coffee" />
   </a>
 </p>
+
+[Austin]: https://github.com/P403n1x87/austin
