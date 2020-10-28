@@ -58,7 +58,7 @@
 
 # Synopsis
 
-The Python TUI is a top-like text-based user interface for Austin, written in
+The Python TUI is a top-like text-based user interface for <a href="https://github.com/P403n1x87/austin">Austin</a>, written in
 pure Python. Originally planned as a sample application to showcase Austin uses,
 it's been promoted to a full-fledged project thanks to great popularity.
 
