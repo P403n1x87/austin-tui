@@ -33,11 +33,13 @@ from austin_tui.view import ViewBuilder
 from austin_tui.view.austin import AustinProfileMode, AustinView
 from psutil import Process
 
-try: 
-    get_all_tasks = asyncio.all_tasks # Python 3.7+
-except AttributeError:
-    get_all_tasks = asyncio.Task.all_tasks # Python 3.6 compatibility
 
+try: 
+    _get_all_tasks = asyncio.all_tasks  # Python 3.7+
+except AttributeError:
+    _get_all_tasks = asyncio.Task.all_tasks  # Python 3.6 compatibility
+
+    
 class AustinTUIArgumentParser(AustinArgumentParser):
     """Austin TUI implementation of the Austin argument parser."""
 
@@ -138,10 +140,10 @@ class AustinTUI(AsyncAustin):
         except AustinError:
             pass
 
-        for task in get_all_tasks():
+        for task in _get_all_tasks():
             task.cancel()
 
-        pending = [task for task in get_all_tasks() if not task.done()]
+        pending = [task for task in _get_all_tasks() if not task.done()]
         if pending:
             done, _ = asyncio.get_event_loop().run_until_complete(asyncio.wait(pending))
             for t in done:
