@@ -34,12 +34,12 @@ from austin_tui.view.austin import AustinProfileMode, AustinView
 from psutil import Process
 
 
-try: 
+try:
     _get_all_tasks = asyncio.all_tasks  # Python 3.7+
 except AttributeError:
     _get_all_tasks = asyncio.Task.all_tasks  # Python 3.6 compatibility
 
-    
+
 class AustinTUIArgumentParser(AustinArgumentParser):
     """Austin TUI implementation of the Austin argument parser."""
 
