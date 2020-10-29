@@ -32,10 +32,18 @@
     <img src="https://img.shields.io/pypi/v/austin-tui.svg"
          alt="PyPI">
   </a>
+  <a href="https://pypi.org/project/austin-tui/">
+    <img src="https://static.pepy.tech/personalized-badge/austin-tui?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads"
+         alt="PyPI Downloads">
+  </a>
+
   <a href="https://github.com/P403n1x87/austin-tui/blob/master/LICENSE.md">
     <img src="https://img.shields.io/badge/license-GPLv3-ff69b4.svg"
          alt="LICENSE">
   </a>
+
+
+
 </p>
 
 <p align="center">
