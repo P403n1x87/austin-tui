@@ -2,26 +2,17 @@
   <br><img src="art/logo.png" alt="Austin TUI" /><br>
 </p>
 
-<h3 align="center">A Top-like Interface for [Austin]</h3>
+<h3 align="center">A Top-like Interface for Austin</h3>
 
-<p align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Tux_Mono.svg"
-       height="24px" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"
-       height="24px" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="https://upload.wikimedia.org/wikipedia/commons/2/2b/Windows_logo_2012-Black.svg"
-       height="24px" />
-</p>
+
 
 <p align="center">
   <a href="https://github.com/P403n1x87/austin-tui/actions?workflow=Tests">
     <img src="https://github.com/P403n1x87/austin-tui/workflows/Tests/badge.svg"
          alt="GitHub Actions: Tests">
   </a>
-  <a href="https://travis-ci.com/P403n1x87/austin-tui">
-    <img src="https://travis-ci.com/P403n1x87/austin-tui.svg?token=fzW2yzQyjwys4tWf9anS"
+  <a href="https://travis-ci.org/P403n1x87/austin-tui">
+    <img src="https://travis-ci.org/P403n1x87/austin-tui.svg?branch=master"
          alt="Travis CI">
   </a>
   <!-- <a href="https://codecov.io/gh/P403n1x87/austin-tui">
@@ -36,14 +27,10 @@
     <img src="https://static.pepy.tech/personalized-badge/austin-tui?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads"
          alt="PyPI Downloads">
   </a>
-
   <a href="https://github.com/P403n1x87/austin-tui/blob/master/LICENSE.md">
     <img src="https://img.shields.io/badge/license-GPLv3-ff69b4.svg"
          alt="LICENSE">
   </a>
-
-
-
 </p>
 
 <p align="center">
@@ -66,9 +53,10 @@
 
 # Synopsis
 
-The Python TUI is a top-like text-based user interface for [Austin], written in
-pure Python. Originally planned as a sample application to showcase [Austin] uses,
-it's been promoted to a full-fledged project thanks to great popularity.
+The Python TUI is a top-like text-based user interface for [Austin], the frame
+stack sampler for CPython. Originally planned as a sample application to
+showcase [Austin] uses, it's been promoted to a full-fledged project thanks to
+great popularity.
 
 <p align="center">
   <img src="art/austin-tui.gif"
@@ -80,6 +68,9 @@ The header shows you the information of the application that is being profiled,
 like its PID, the command line used to invoke it, as well as a plot of the
 amount of CPU and memory that is being used by it, in a system-monitor style.
 
+To know more about how the TUI itself was made, have a read through [The Austin
+TUI Way to Resourceful Text-based User Interfaces].
+
 # Installation
 
 Austin TUI can be installed directly from PyPI with
@@ -88,10 +79,9 @@ Austin TUI can be installed directly from PyPI with
 pip install austin-tui --upgrade
 ~~~
 
-**NOTE** In order for the TUI to work, the Austin 2 binary needs to be on the
-``PATH`` environment variable. See [Austin
-installation](https://github.com/P403n1x87/austin#installation) instructions to
-see how you can easily install Austin on your platform.
+> **NOTE** In order for the TUI to work, the Austin 2 binary needs to be on the
+> ``PATH`` environment variable. Have a look at [Austin installation]
+> instructions to see how you can easily install Austin on your platform.
 
 # Usage
 
@@ -170,17 +160,23 @@ operation on the bottom-right corner.
 # Compatibility
 
 Austin TUI has been tested with Python 3.6-3.9 and is known to work on
-**Linux**, **MacOS** and **Windows**.
+**Linux**, **macOS** and **Windows**.
 
 Since Austin TUI uses [Austin] to collect samples, the same note applies here:
 
-> Due to the **System Integrity Protection** introduced in **MacOS** with El
+> Due to the **System Integrity Protection** introduced in **macOS** with El
 > Capitan, Austin cannot profile Python processes that use an executable located
 > in the `/bin` folder, even with `sudo`. Hence, either run the interpreter from
 > a virtual environment or use a Python interpreter that is installed in, e.g.,
 > `/Applications` or via `brew` with the default prefix (`/usr/local`). Even in
 > these cases, though, the use of `sudo` is required.
 
+As for Linux users, the use of `sudo` can be avoided by granting Austin the
+`cap_sys_ptrace` capability with, e.g.
+
+~~~
+sudo setcap cap_sys_ptrace+ep `which austin`
+~~~
 
 # Contribute
 
@@ -204,4 +200,7 @@ on BMC or by chipping in a few pennies on
   </a>
 </p>
 
+
 [Austin]: https://github.com/P403n1x87/austin
+[Austin installation]: https://github.com/P403n1x87/austin#installation
+[The Austin TUI Way to Resourceful Text-based User Interfaces]: https://p403n1x87.github.io/the-austin-tui-way-to-resourceful-text-based-user-interfaces.html
