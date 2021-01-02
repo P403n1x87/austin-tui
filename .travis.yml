@@ -11,13 +11,12 @@ dist: bionic
 jobs:
   include:
     # Linux
-    - env: TARGET=x86_64-unknown-linux-gnu
-      os: linux
+    - os: linux
 
 before_script:
   # Install required Python versions
   - sudo add-apt-repository ppa:deadsnakes/ppa -y
-  - sudo apt install python3.{6..9} python3.{6..9}-dev -y;
+  - sudo apt-get install -y python3.{6..9} python3.{6..9}-dev python3.9-venv;
 
   # Clone Austin development branch
   - git clone --branch devel --depth 1 https://github.com/P403n1x87/austin.git ../austin
@@ -27,8 +26,8 @@ before_script:
   - gcc -Wall -O3 -Os -s -pthread src/*.c -o src/austin
   - cd -
 
-  - pip install nox==2020.5.24
-  - pip install poetry==1.0.5
+  - pip install nox
+  - pip install poetry
 
 script:
   - export PATH="../austin/src:$PATH"

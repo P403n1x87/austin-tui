@@ -23,7 +23,7 @@
 
 [tool.poetry]
 name = "austin-tui"
-version = "0.1.0"
+version = "0.1.3"
 description = "The top-like text-based user interface for Austin"
 license = "GPL-3.0-or-later"
 authors = ["Gabriele N. Tornetta <phoenix1987@gmail.com>"]
@@ -41,26 +41,29 @@ classifiers = [
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
 ]
+packages = [
+  { include = "austin_tui" },
+]
 
 [tool.poetry.scripts]
 austin-tui = "austin_tui.__main__:main"
 
 [tool.poetry.dependencies]
-python = ">=3.6"
-austin-python = {git = "https://github.com/P403n1x87/austin-python.git", branch = "devel"}
+python = "^3.6"
+# austin-python = {git = "https://github.com/P403n1x87/austin-python.git", branch = "devel"}
+austin-python = "^0.1.0"
 windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
 lxml = "^4.5.1"
 importlib-resources = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 coverage = {extras = ["toml"], version = "*"}
-pytest = ">=5.4.2"
-pytest-cov = ">=2.8.1"
+pytest = "^6.1.2"
+pytest-cov = "^2.10.1"
 sphinx = "^3.0.4"
 sphinx-autodoc-typehints = "^1.10.3"
-nox = "^2020.5.24"
 mypy = "^0.770"
-codecov = "^2.1.3"
+codecov = "^2.1.10"
 
 [tool.poetry.urls]
 issues = "https://github.com/P403n1x87/austin-tui/issues"

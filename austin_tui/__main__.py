@@ -24,7 +24,7 @@ import asyncio
 import sys
 from typing import List, Optional
 
-from austin import AustinError
+from austin import AustinError, AustinTerminated
 from austin.aio import AsyncAustin
 from austin.cli import AustinArgumentParser, AustinCommandLineError
 from austin_tui import catch
@@ -32,6 +32,12 @@ from austin_tui.models import AustinModel
 from austin_tui.view import ViewBuilder
 from austin_tui.view.austin import AustinProfileMode, AustinView
 from psutil import Process
+
+
+try:
+    _get_all_tasks = asyncio.all_tasks  # Python 3.7+
+except AttributeError:
+    _get_all_tasks = asyncio.Task.all_tasks  # Python 3.6 compatibility
 
 
 class AustinTUIArgumentParser(AustinArgumentParser):
@@ -102,6 +108,8 @@ class AustinTUI(AsyncAustin):
         """Start Austin and catch any exceptions."""
         try:
             await super().start(args)
+        except AustinTerminated:
+            pass
         except AustinError as e:
             raise KeyboardInterrupt("Failed to start") from e
 
@@ -132,10 +140,10 @@ class AustinTUI(AsyncAustin):
         except AustinError:
             pass
 
-        for task in asyncio.Task.all_tasks():
+        for task in _get_all_tasks():
             task.cancel()
 
-        pending = [task for task in asyncio.Task.all_tasks() if not task.done()]
+        pending = [task for task in _get_all_tasks() if not task.done()]
         if pending:
             done, _ = asyncio.get_event_loop().run_until_complete(asyncio.wait(pending))
             for t in done:

@@ -60,5 +60,8 @@ class Palette:
 
     def init(self) -> None:
         """Initialise the curses color pairs."""
-        for cid, pair in self._color_pairs.items():
-            curses.init_pair(cid, *pair)
+        try:
+            for cid, pair in self._color_pairs.items():
+                curses.init_pair(cid, *pair)
+        except curses.error:
+            pass
