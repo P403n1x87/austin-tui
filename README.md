@@ -5,7 +5,6 @@
 <h3 align="center">A Top-like Interface for Austin</h3>
 
 
-
 <p align="center">
   <a href="https://github.com/P403n1x87/austin-tui/actions?workflow=Tests">
     <img src="https://github.com/P403n1x87/austin-tui/workflows/Tests/badge.svg"

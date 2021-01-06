@@ -21,7 +21,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import asyncio
-from typing import Any
+from enum import Enum
+from typing import Any, Callable, Optional
 
 from austin_tui.controllers.austin import (
     AustinController,
@@ -44,22 +45,33 @@ from austin_tui.widgets.markup import AttrString, AttrStringChunk
 class AustinView(View):
     """Austin view."""
 
+    class Event(Enum):
+        """Austin View Events."""
+
+        QUIT = 1
+
     def __init__(
-        self, name: str, mode: AustinProfileMode = AustinProfileMode.TIME
+        self,
+        name: str,
+        mode: AustinProfileMode = AustinProfileMode.TIME,
+        callback: Optional[Callable[["Event", Optional[Any]], None]] = None,
     ) -> None:
         super().__init__(name)
 
         self.mode = mode
+        self.callback = callback
 
         # Create controllers
         self._austin_controller = AustinController(self)
         self._system_controller = SystemController(self)
 
-        self._update_task = asyncio.get_event_loop().create_task(self.update_loop())
+        self._stopped = False
 
     def on_quit(self) -> bool:
         """Handle Quit event."""
-        raise KeyboardInterrupt("Quit signal")
+        if not self.callback:
+            raise RuntimeError("AustinTUI requires a callback to handle quit events.")
+        self.callback(self.Event.QUIT)
 
     def on_next_thread(self) -> bool:
         """Handle next thread event."""
@@ -135,17 +147,9 @@ class AustinView(View):
 
     async def update_loop(self) -> None:
         """The UI update loop."""
-        await self._input_event.wait()
-
-        while self.is_open and self.root_widget:
-            try:
-                self._update()
-                self.root_widget.refresh()
-            except Exception as e:
-                from austin_tui import write_exception_to_file
-
-                write_exception_to_file(e)
-                raise KeyboardInterrupt()
+        while not self._stopped and self.is_open and self.root_widget:
+            self._update()
+            self.root_widget.refresh()
 
             await asyncio.sleep(1)
 
@@ -154,7 +158,7 @@ class AustinView(View):
         if not self.is_open or not self.root_widget:
             return
 
-        self._update_task.cancel()
+        self._stopped = True
         self.logo.set_color("stopped")
         self.cpu.set_text("--%")
         self.mem.set_text("--M")

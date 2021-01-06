@@ -23,7 +23,7 @@
 import asyncio
 import curses
 import sys
-from typing import Any, Callable, Dict, Optional, TextIO, Type
+from typing import Any, Callable, Dict, List, Optional, TextIO, Type
 
 from austin_tui.view.palette import Palette
 from austin_tui.widgets import Container, Widget
@@ -81,11 +81,15 @@ def _validate_ns(node: Element) -> None:
 
 
 class View:
-    """View object."""
+    """View object.
+
+    All coroutines are collected and scheduled for execution when the view is
+    opened.
+    """
 
     def __init__(self, name: str) -> None:
-        self._input_event = asyncio.Event()
-        self._input_task = asyncio.get_event_loop().create_task(self._input_loop())
+        self._tasks = []
+
         self._event_handlers: Dict[str, EventHandler] = {}
 
         self._open = False
@@ -94,11 +98,20 @@ class View:
         self.palette = Palette()
         self.root_widget = None
 
+    def _create_tasks(self) -> List[asyncio.Task]:
+        loop = asyncio.get_event_loop()
+        self._tasks = [
+            loop.create_task(coro())
+            for coro in (
+                attr
+                for attr in (getattr(self, name) for name in dir(self))
+                if callable(attr) and asyncio.iscoroutinefunction(attr)
+            )
+        ]
+
     async def _input_loop(self) -> None:
         if not self.root_widget:
             raise RuntimeError("Missing root widget")
-
-        await self._input_event.wait()
 
         while self._open:
             await asyncio.sleep(0.015)
@@ -111,12 +124,6 @@ class View:
                     self.root_widget.refresh()
             except (KeyError, curses.error):
                 pass
-
-            except Exception as e:
-                from austin_tui import write_exception_to_file
-
-                write_exception_to_file(e)
-                raise KeyboardInterrupt()
 
     def _build(self, node: Element) -> Widget:
         _validate_ns(node)
@@ -141,7 +148,11 @@ class View:
         return markup(str(text), self.palette)
 
     def open(self) -> None:
-        """Open the view."""
+        """Open the view.
+
+        Calling this method not only shows the TUI on screen, but also collects
+        and schedules all the coroutines on the instance with the event loop.
+        """
         if not self.root_widget:
             raise RuntimeError("View has no root widget")
 
@@ -153,7 +164,8 @@ class View:
         self.root_widget.refresh()
 
         self._open = True
-        self._input_event.set()
+
+        self._create_tasks()
 
     def close(self) -> None:
         """Close the view."""
@@ -161,7 +173,11 @@ class View:
             return
 
         self.root_widget.hide()
-        self._input_task.cancel()
+
+        for task in self._tasks:
+            task.cancel()
+
+        task = []
         self._open = False
 
     @property
@@ -237,43 +253,3 @@ class ViewBuilder:
                 files(module).joinpath(resource).read_text(encoding="utf8").encode()
             )
         )
-
-
-# if __name__ == "__main__":
-#
-#     class AustinView(View):
-#         def on_quit(self, data=None):
-#             raise KeyboardInterrupt("Quit event")
-#
-#         def on_previous_thread(self, data=None):
-#             title = self.title.get_text()
-#             self.title.set_text(title[1:] + title[0])
-#             self.title.refresh()
-#
-#         def on_next_thread(self, data=None):
-#             title = self.title.get_text()
-#             self.title.set_text(title[-1] + title[:-1])
-#             self.title.refresh()
-#
-#         def on_full_mode_toggled(self, data=None):
-#             pass
-#
-#         def on_table_up(self, data=None):
-#             return self.table.scroll_up()
-#
-#         def on_table_down(self, data=None):
-#             return self.table.scroll_down()
-#
-#     view = ViewBuilder.from_resource("austin_tui.view", "tui.austinui")
-#     exc = None
-#     try:
-#         view.open()
-#
-#         loop = asyncio.get_event_loop()
-#         loop.run_forever()
-#     except Exception as e:
-#         exc = e
-#     finally:
-#         view.close()
-#         if exc:
-#             raise exc

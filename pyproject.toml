@@ -23,7 +23,7 @@
 
 [tool.poetry]
 name = "austin-tui"
-version = "0.1.3"
+version = "0.2.0"
 description = "The top-like text-based user interface for Austin"
 license = "GPL-3.0-or-later"
 authors = ["Gabriele N. Tornetta <phoenix1987@gmail.com>"]
@@ -50,7 +50,7 @@ austin-tui = "austin_tui.__main__:main"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-austin-python = "^0.1.0"
+austin-python = "^0.2.0"
 windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
 lxml = "^4.5.1"
 importlib-resources = "^2.0.1"
