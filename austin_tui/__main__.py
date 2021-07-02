@@ -28,12 +28,12 @@ from typing import Any, List, Optional
 from austin import AustinError, AustinTerminated
 from austin.aio import AsyncAustin
 from austin.cli import AustinArgumentParser, AustinCommandLineError
-from austin_tui import catch
-from austin_tui.models import AustinModel
-from austin_tui.view import ViewBuilder
-from austin_tui.view.austin import AustinProfileMode, AustinView
 from psutil import Process
 
+from austin_tui import AustinProfileMode
+from austin_tui.models import AustinModel
+from austin_tui.view import ViewBuilder
+from austin_tui.view.austin import AustinView
 
 try:
     _get_all_tasks = asyncio.all_tasks  # Python 3.7+
@@ -73,13 +73,13 @@ class AustinTUI(AsyncAustin):
 
         self._args = AustinTUIArgumentParser().parse_args()
 
-        self._model = AustinModel()
         self._view: AustinView = ViewBuilder.from_resource(
             "austin_tui.view", "tui.austinui"
         )
-        self._view.mode = (
-            AustinProfileMode.MEMORY if self._args.memory else AustinProfileMode.TIME
-        )
+        mode = AustinProfileMode.MEMORY if self._args.memory else AustinProfileMode.TIME
+        self._view.mode = mode
+        self._model = AustinModel(mode)
+
         self._view.callback = self.on_view_event
 
         self._global_stats: Optional[str] = None
@@ -88,7 +88,6 @@ class AustinTUI(AsyncAustin):
         """Austin sample received callback."""
         self._model.update(sample)
 
-    @catch
     def on_ready(
         self, austin_process: Process, child_process: Process, command_line: str
     ) -> None:
@@ -122,31 +121,31 @@ class AustinTUI(AsyncAustin):
     async def start(self, args: List[str]) -> None:
         """Start Austin and catch any exceptions."""
         try:
+            print("🏁 Starting the Austin TUI ...", end="")
             await super().start(args)
-        except AustinTerminated:
-            pass
-        except Exception as e:
-            self.shutdown(e)
+        except Exception:
+            self.shutdown()
+            raise
 
     def run(self) -> None:
         """Run the TUI."""
         loop = asyncio.get_event_loop()
 
-        try:
-            print("🏁 Starting the Austin TUI ...", end="\r")
-            austin_task = loop.create_task(
-                self.start(AustinTUIArgumentParser.to_list(self._args))
-            )
-            loop.run_forever()
-            if not austin_task.done():
-                austin_task.cancel()
-        except AustinError as e:
-            self.shutdown(e)
-        except KeyboardInterrupt:
-            self.shutdown()
+        austin = loop.create_task(
+            self.start(AustinTUIArgumentParser.to_list(self._args))
+        )
+        loop.run_forever()
+        if not austin.done():
+            austin.cancel()
 
-    def shutdown(self, exception: Optional[Exception] = None) -> None:
+        if austin.done():
+            austin.result()
+
+    def shutdown(self) -> None:
         """Shutdown the TUI."""
+        self._view.close()
+        print("\r\033[1K", end="")
+
         try:
             self.terminate()
         except AustinError:
@@ -154,28 +153,7 @@ class AustinTUI(AsyncAustin):
 
         self._view.close()
 
-        if exception:
-            message = exception.args[0]
-            if message[0] == "(":
-                _, _, message = message.partition(") ")
-            _print(message)
-
-        loop = asyncio.get_event_loop()
-        loop.stop()
-
-        pending = [task for task in _get_all_tasks() if not task.done()]
-        if pending:
-            try:
-                done, _ = loop.run_until_complete(asyncio.wait(pending))
-                for t in done:
-                    try:
-                        res = t.result()
-                        if res:
-                            print(res)
-                    except (AustinError, asyncio.CancelledError):
-                        pass
-            except Exception:
-                pass
+        asyncio.get_event_loop().stop()
 
 
 def main() -> None:
@@ -185,18 +163,18 @@ def main() -> None:
 
     tui = AustinTUI()
 
-    # -- This is just for debugging --
-    # def _handler(loop, context):
-    #     tui._view.close()
-    #     loop.stop()
-    #
-    #     from austin_tui import write_exception_to_file
-    #
-    #     write_exception_to_file(context["exception"])
-    #
-    # asyncio.get_event_loop().set_exception_handler(_handler)
+    try:
+        tui.run()
+    except AustinError as e:
+        print(
+            "❌ Austin failed to start:                                                    \n"
+            f"\n  ❯ {e}\n\n"
+            "Please make sure that the Austin binary is available from the PATH environment\n"
+            "variable and that the command line arguments that you have provided are correct."
+        )
+        exit(-1)
 
-    tui.run()
+    exit(0)
 
 
 if __name__ == "__main__":

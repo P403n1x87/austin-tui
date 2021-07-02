@@ -20,30 +20,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# TODO: This is for debug purpose only and should be removed.
+import os
+import sys
+from enum import Enum
+from traceback import format_exception
 
 
-def write_exception_to_file(e):
-    import traceback as tb
+class AustinProfileMode(Enum):
+    """Austin profile modes."""
 
-    trace = "".join(tb.format_tb(e.__traceback__))
-    trace += f"{type(e).__qualname__}: {e}"
-    # print(trace)
-    with open("./austin-tui.out", "a") as fout:
-        fout.write(trace + "\n")
+    TIME = "Time"
+    MEMORY = "Memory"
 
 
-def fp(text):
-    with open("./austin-tui.out", "a") as fout:
-        fout.write(str(text) + "\n")
+if os.environ.get("AUSTIN_TUI_DEBUG"):
+    _original_excepthook = sys.excepthook
 
-
-def catch(f):
-    def wrapper(*args, **kwargs):
+    def _excepthook(exc_type, exc, tb):
         try:
-            f(*args, **kwargs)
-        except Exception as e:
-            write_exception_to_file(e)
-            raise e
+            os.remove("austin-tui.exc")
+        except Exception:
+            pass
+        with open("austin-tui.exc", "w") as fout:
+            fout.writelines(format_exception(exc_type, exc, tb))
+        _original_excepthook(exc_type, exc, tb)
 
-    return wrapper
+    sys.excepthook = _excepthook

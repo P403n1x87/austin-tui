@@ -22,9 +22,9 @@
 
 import time
 
+from austin_tui import AustinProfileMode
 from austin_tui.models import Model
 from psutil import NoSuchProcess, Process
-
 
 Seconds = float
 Percentage = float
@@ -34,7 +34,7 @@ Bytes = int
 class SystemModel(Model):
     """System statistics model."""
 
-    def __init__(self) -> None:
+    def __init__(self, mode: AustinProfileMode) -> None:
         self._start_time: Seconds = 0
         self._end_time: Seconds = 0
 

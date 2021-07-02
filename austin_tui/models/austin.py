@@ -23,8 +23,10 @@
 from time import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from austin.stats import AustinStats, InvalidSample, Sample
+from austin_tui import AustinProfileMode
 from austin_tui.models import Model
+
+from austin.stats import AustinStats, AustinStatsType, InvalidSample, MetricType, Sample
 
 
 class OrderedSet:
@@ -76,13 +78,19 @@ class AustinModel(Model):
 
     __borg__: Dict[str, Any] = {}
 
-    def __init__(self) -> None:
+    def __init__(self, mode: AustinProfileMode) -> None:
         self.__dict__ = self.__borg__
+
+        self.mode = mode
 
         self._samples = 0
         self._invalids = 0
         self._last_stack: Dict[str, Sample] = {}
-        self._stats = AustinStats()
+        self._stats = AustinStats(
+            AustinStatsType.MEMORY
+            if mode is AustinProfileMode.MEMORY
+            else AustinStatsType.WALL
+        )
         self._stats.timestamp = time()
 
         self._austin_version: Optional[str] = None
@@ -102,7 +110,12 @@ class AustinModel(Model):
     def update(self, raw_sample: str) -> None:
         """Update current statistics with a new sample."""
         try:
-            sample = Sample.parse(raw_sample)
+            (sample,) = Sample.parse(
+                raw_sample,
+                MetricType.MEMORY
+                if self.mode is AustinProfileMode.MEMORY
+                else MetricType.TIME,
+            )
             self._stats.update(sample)
             self._stats.timestamp = time()
             thread_key = f"{sample.pid}:{sample.thread}"

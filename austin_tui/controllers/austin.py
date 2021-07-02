@@ -26,18 +26,13 @@ from io import StringIO
 from time import time
 from typing import Any
 
-from austin.stats import ThreadStats
+from austin_tui import AustinProfileMode
 from austin_tui.controllers import Controller, Event
 from austin_tui.models import AustinModel
 from austin_tui.view import View
 from austin_tui.widgets.markup import escape
 
-
-class AustinProfileMode(Enum):
-    """Austin profile modes."""
-
-    TIME = "Time"
-    MEMORY = "Memory"
+from austin.stats import ThreadStats
 
 
 class ThreadNav(Enum):
@@ -97,10 +92,10 @@ class AustinController(Controller):
             child_frame_stats = container[frame]
             frame_stats.append(
                 [
-                    self._formatter(child_frame_stats.own.time),
-                    self._formatter(child_frame_stats.total.time),
-                    self._scaler(child_frame_stats.own.time, max_scale),
-                    self._scaler(child_frame_stats.total.time, max_scale),
+                    self._formatter(child_frame_stats.own.value),
+                    self._formatter(child_frame_stats.total.value),
+                    self._scaler(child_frame_stats.own.value, max_scale),
+                    self._scaler(child_frame_stats.total.value, max_scale),
                     self.view.markup(
                         " "
                         + escape(child_frame_stats.label.function)
@@ -151,10 +146,10 @@ class AustinController(Controller):
 
             frame_stats.append(
                 [
-                    self._formatter(stats.own.time, active),
-                    self._formatter(stats.total.time, active),
-                    self._scaler(stats.own.time, max_scale, active),
-                    self._scaler(stats.total.time, max_scale, active),
+                    self._formatter(stats.own.value, active),
+                    self._formatter(stats.total.value, active),
+                    self._scaler(stats.own.value, max_scale, active),
+                    self._scaler(stats.total.value, max_scale, active),
                     self.view.markup(
                         " "
                         + f"<inactive>{marker}</inactive>"

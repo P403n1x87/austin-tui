@@ -22,16 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 [tool.poetry]
-name = "austin-tui"
-version = "0.2.0"
-description = "The top-like text-based user interface for Austin"
-license = "GPL-3.0-or-later"
 authors = ["Gabriele N. Tornetta <phoenix1987@gmail.com>"]
-readme = "README.md"
-homepage = "https://github.com/P403n1x87/austin-tui"
-repository = "https://github.com/P403n1x87/austin-tui"
-documentation = "https://austin-tui.readthedocs.io"
-keywords = ["performance", "profiling", "testing", "development"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -41,28 +32,38 @@ classifiers = [
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
 ]
+description = "The top-like text-based user interface for Austin"
+documentation = "https://austin-tui.readthedocs.io"
+homepage = "https://github.com/P403n1x87/austin-tui"
+keywords = ["performance", "profiling", "testing", "development"]
+license = "GPL-3.0-or-later"
+name = "austin-tui"
 packages = [
-  { include = "austin_tui" },
+  {include = "austin_tui"},
 ]
+readme = "README.md"
+repository = "https://github.com/P403n1x87/austin-tui"
+version = "0.0.0"
 
 [tool.poetry.scripts]
 austin-tui = "austin_tui.__main__:main"
 
 [tool.poetry.dependencies]
-python = "^3.6"
-austin-python = "^0.2.0"
-windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
-lxml = "^4.5.1"
+austin-python = {version = "^1.0.0*", allow-prereleases = true}
 importlib-resources = "^2.0.1"
+lxml = "^4.5.1"
+python = ">=3.6"
+windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
 
 [tool.poetry.dev-dependencies]
+codecov = "^2.1.3"
 coverage = {extras = ["toml"], version = "*"}
-pytest = "^6.1.2"
-pytest-cov = "^2.10.1"
+mypy = "^0.770"
+nox = "^2020.5.24"
+pytest = ">=5.4.2"
+pytest-cov = ">=2.8.1"
 sphinx = "^3.0.4"
 sphinx-autodoc-typehints = "^1.10.3"
-mypy = "^0.770"
-codecov = "^2.1.10"
 
 [tool.poetry.urls]
 issues = "https://github.com/P403n1x87/austin-tui/issues"
@@ -75,5 +76,5 @@ source = ["austin_tui"]
 show_missing = true
 
 [build-system]
-requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+requires = ["poetry>=0.12"]

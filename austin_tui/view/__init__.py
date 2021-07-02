@@ -25,19 +25,15 @@ import curses
 import sys
 from typing import Any, Callable, Dict, List, Optional, TextIO, Type
 
+import austin_tui.widgets.catalog as catalog
 from austin_tui.view.palette import Palette
 from austin_tui.widgets import Container, Widget
-import austin_tui.widgets.catalog as catalog
 from austin_tui.widgets.markup import AttrString, markup
 from importlib_resources import files
-from lxml.etree import (
-    _Comment as Comment,
-    Element,
-    fromstring as parse_xml_string,
-    parse as parse_xml_stream,
-    QName,
-)
-
+from lxml.etree import Element, QName
+from lxml.etree import _Comment as Comment
+from lxml.etree import fromstring as parse_xml_string
+from lxml.etree import parse as parse_xml_stream
 
 EventHandler = Callable[[Optional[Any]], bool]
 

@@ -53,7 +53,7 @@ class Controller(ABC):
 
     def __init__(self, view: View) -> None:
         self.view = view
-        self.model = self.__model__()
+        self.model = self.__model__(view.mode)
 
     def push(self, event: Event, data: Any = None) -> Any:
         """Push an event to the controller.
