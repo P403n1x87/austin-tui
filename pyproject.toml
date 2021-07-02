@@ -71,6 +71,9 @@ sphinx-autodoc-typehints = "^1.10.3"
 [tool.poetry.urls]
 issues = "https://github.com/P403n1x87/austin-tui/issues"
 
+[tool.poetry-dynamic-versioning]
+enable = true
+
 [tool.coverage.run]
 branch = true
 source = ["austin_tui"]
