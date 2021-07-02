@@ -23,10 +23,14 @@
 from time import time
 from typing import Any, Dict, List, Optional, Tuple
 
+from austin.stats import AustinStats
+from austin.stats import AustinStatsType
+from austin.stats import InvalidSample
+from austin.stats import MetricType
+from austin.stats import Sample
+
 from austin_tui import AustinProfileMode
 from austin_tui.models import Model
-
-from austin.stats import AustinStats, AustinStatsType, InvalidSample, MetricType, Sample
 
 
 class OrderedSet:

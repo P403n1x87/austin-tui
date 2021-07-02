@@ -26,13 +26,14 @@ from io import StringIO
 from time import time
 from typing import Any
 
+from austin.stats import ThreadStats
+
 from austin_tui import AustinProfileMode
-from austin_tui.controllers import Controller, Event
+from austin_tui.controllers import Controller
+from austin_tui.controllers import Event
 from austin_tui.models import AustinModel
 from austin_tui.view import View
 from austin_tui.widgets.markup import escape
-
-from austin.stats import ThreadStats
 
 
 class ThreadNav(Enum):

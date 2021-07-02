@@ -45,6 +45,9 @@ readme = "README.md"
 repository = "https://github.com/P403n1x87/austin-tui"
 version = "0.0.0"
 
+[tool.isort]
+profile = "google"
+
 [tool.poetry.scripts]
 austin-tui = "austin_tui.__main__:main"
 

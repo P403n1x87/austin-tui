@@ -22,9 +22,11 @@
 
 from typing import Any
 
-from austin_tui.controllers import Controller, Event
-from austin_tui.models import SystemModel
 from psutil import Process
+
+from austin_tui.controllers import Controller
+from austin_tui.controllers import Event
+from austin_tui.models import SystemModel
 
 
 def fmt_time(s: int) -> str:

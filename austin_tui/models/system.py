@@ -22,9 +22,11 @@
 
 import time
 
+from psutil import NoSuchProcess
+from psutil import Process
+
 from austin_tui import AustinProfileMode
 from austin_tui.models import Model
-from psutil import NoSuchProcess, Process
 
 Seconds = float
 Percentage = float

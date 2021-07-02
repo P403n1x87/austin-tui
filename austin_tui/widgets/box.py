@@ -22,8 +22,8 @@
 
 from typing import Any
 
-from austin_tui.widgets import Container, Widget
-
+from austin_tui.widgets import Container
+from austin_tui.widgets import Widget
 
 _COORDS = ("x", "y")
 _SIZES = ("width", "height")

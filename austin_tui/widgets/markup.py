@@ -20,13 +20,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 import curses
 from dataclasses import dataclass
 from typing import Any, List
 
-from austin_tui.view.palette import Palette
 from lxml import etree
+
+from austin_tui.view.palette import Palette
 
 
 def escape(text: str) -> str:

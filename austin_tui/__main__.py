@@ -25,9 +25,11 @@ import sys
 from textwrap import wrap
 from typing import Any, List, Optional
 
-from austin import AustinError, AustinTerminated
+from austin import AustinError
+from austin import AustinTerminated
 from austin.aio import AsyncAustin
-from austin.cli import AustinArgumentParser, AustinCommandLineError
+from austin.cli import AustinArgumentParser
+from austin.cli import AustinCommandLineError
 from psutil import Process
 
 from austin_tui import AustinProfileMode

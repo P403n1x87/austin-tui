@@ -25,11 +25,15 @@ from enum import Enum
 from typing import Any, Callable, Optional
 
 from austin_tui import AustinProfileMode
-from austin_tui.controllers.austin import AustinController, AustinEvent, ThreadNav
-from austin_tui.controllers.system import SystemController, SystemEvent
+from austin_tui.controllers.austin import AustinController
+from austin_tui.controllers.austin import AustinEvent
+from austin_tui.controllers.austin import ThreadNav
 from austin_tui.controllers.system import fmt_time as _fmt_time
+from austin_tui.controllers.system import SystemController
+from austin_tui.controllers.system import SystemEvent
 from austin_tui.view import View
-from austin_tui.widgets.markup import AttrString, AttrStringChunk
+from austin_tui.widgets.markup import AttrString
+from austin_tui.widgets.markup import AttrStringChunk
 
 # ---- AustinView -------------------------------------------------------------
 

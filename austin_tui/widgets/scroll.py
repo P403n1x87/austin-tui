@@ -23,7 +23,8 @@
 import curses
 from typing import Optional, Tuple
 
-from austin_tui.widgets import Container, Widget
+from austin_tui.widgets import Container
+from austin_tui.widgets import Widget
 
 
 class ScrollView(Container):
