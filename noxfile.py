@@ -2,8 +2,7 @@ import tempfile
 
 import nox
 
-
-nox.options.sessions = ["lint"]
+nox.options.sessions = ["lint", "mypy"]
 
 
 # ---- Configuration ----
@@ -59,7 +58,7 @@ def lint(session):
 @nox.session(python=SUPPORTED_PYTHON_VERSIONS)
 def mypy(session):
     session.install("mypy")
-    session.run("mypy", *MYPY_LOCATIONS)
+    session.run("mypy", "--show-error-codes", *MYPY_LOCATIONS)
 
 
 @nox.session(python="3.7")

@@ -69,7 +69,7 @@ class Table(Widget):
             else:
                 text = row[j]
                 win.addstr(i, x, text[: available - x], 0)
-                delta = min(text[: available - x], len(text))
+                delta = min(available - x, len(text))
             x += delta
 
     def set_data(self, data: TableData) -> None:

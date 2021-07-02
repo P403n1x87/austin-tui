@@ -54,7 +54,7 @@ class SystemController(Controller):
     fresh system data (e.g. CPU usage, duration etc...).
     """
 
-    __model__ = SystemModel
+    __model__ = SystemModel  # type: ignore[assignment]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

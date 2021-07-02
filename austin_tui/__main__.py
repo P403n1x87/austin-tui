@@ -26,7 +26,6 @@ from textwrap import wrap
 from typing import Any, List, Optional
 
 from austin import AustinError
-from austin import AustinTerminated
 from austin.aio import AsyncAustin
 from austin.cli import AustinArgumentParser
 from austin.cli import AustinCommandLineError
@@ -75,7 +74,7 @@ class AustinTUI(AsyncAustin):
 
         self._args = AustinTUIArgumentParser().parse_args()
 
-        self._view: AustinView = ViewBuilder.from_resource(
+        self._view: AustinView = ViewBuilder.from_resource(  # type: ignore[assignment]
             "austin_tui.view", "tui.austinui"
         )
         mode = AustinProfileMode.MEMORY if self._args.memory else AustinProfileMode.TIME
@@ -137,6 +136,9 @@ class AustinTUI(AsyncAustin):
             self.start(AustinTUIArgumentParser.to_list(self._args))
         )
         loop.run_forever()
+
+        self._view.close()
+
         if not austin.done():
             austin.cancel()
 
@@ -152,8 +154,6 @@ class AustinTUI(AsyncAustin):
             self.terminate()
         except AustinError:
             pass
-
-        self._view.close()
 
         asyncio.get_event_loop().stop()
 

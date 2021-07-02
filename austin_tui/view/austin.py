@@ -67,7 +67,8 @@ class AustinView(View):
         """Handle Quit event."""
         if not self.callback:
             raise RuntimeError("AustinTUI requires a callback to handle quit events.")
-        self.callback(self.Event.QUIT)
+        self.callback(self.Event.QUIT, None)
+        return False
 
     def on_next_thread(self) -> bool:
         """Handle next thread event."""

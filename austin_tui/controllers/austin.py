@@ -59,7 +59,7 @@ class AustinController(Controller):
     This controller is in charge of Austin data managing and UI updates.
     """
 
-    __model__ = AustinModel
+    __model__ = AustinModel  # type: ignore[assignment]
 
     def __init__(self, view: View) -> None:
         super().__init__(view)

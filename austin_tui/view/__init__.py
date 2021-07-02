@@ -20,6 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from abc import ABC
 import asyncio
 import curses
 import sys
@@ -80,7 +81,7 @@ def _validate_ns(node: Element) -> None:
         raise ViewBuilderError(f"Node '{node}' has invalid namespace")
 
 
-class View:
+class View(ABC):
     """View object.
 
     All coroutines are collected and scheduled for execution when the view is
@@ -88,7 +89,7 @@ class View:
     """
 
     def __init__(self, name: str) -> None:
-        self._tasks = []
+        self._tasks: List[asyncio.Task] = []
 
         self._event_handlers: Dict[str, EventHandler] = {}
 
@@ -98,7 +99,7 @@ class View:
         self.palette = Palette()
         self.root_widget = None
 
-    def _create_tasks(self) -> List[asyncio.Task]:
+    def _create_tasks(self) -> None:
         loop = asyncio.get_event_loop()
         self._tasks = [
             loop.create_task(coro())

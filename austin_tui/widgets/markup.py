@@ -82,7 +82,7 @@ class AttrStringChunk(Writable):
             attr |= curses.A_REVERSE
         return attr
 
-    def write(
+    def write(  # type: ignore[override]
         self, window: "curses._CursesWindow", y: int, x: int, maxlen: int = None
     ) -> int:
         """Write the chunk on the given curses window.
@@ -129,7 +129,7 @@ class AttrString(Writable):
         """The actual string length."""
         return sum(len(_) for _ in self._chunks)
 
-    def write(
+    def write(  # type: ignore[override]
         self, window: "curses._CursesWindow", y: int, x: int, maxlen: int = None
     ) -> int:
         """Write the attribute string on the given window.
