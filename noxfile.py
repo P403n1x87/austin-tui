@@ -8,7 +8,7 @@ nox.options.sessions = ["lint", "mypy"]
 # ---- Configuration ----
 
 
-SUPPORTED_PYTHON_VERSIONS = ["3.6", "3.7", "3.8", "3.9"]
+SUPPORTED_PYTHON_VERSIONS = ["3.6", "3.7", "3.8", "3.9", "3.10"]
 
 PYTEST_OPTIONS = ["-vvvs", "--cov=austin_tui", "--cov-report", "term-missing"]
 
@@ -28,6 +28,7 @@ def install_with_constraints(session, *args, **kwargs):
             "export",
             "--dev",
             "--format=requirements.txt",
+            "--without-hashes",
             f"--output={requirements.name}",
             external=True,
         )
@@ -43,7 +44,7 @@ def install_with_constraints(session, *args, **kwargs):
 #     session.run("poetry", "run", "python", "-m", "pytest", *PYTEST_OPTIONS)
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.session(python=[SUPPORTED_PYTHON_VERSIONS])
 def lint(session):
     session.install(
         "flake8",
@@ -55,7 +56,7 @@ def lint(session):
     session.run("flake8", *LINT_LOCATIONS, "--exclude", *LINT_EXCLUDES)
 
 
-@nox.session(python=SUPPORTED_PYTHON_VERSIONS)
+@nox.session(python="3.7")
 def mypy(session):
     session.install("mypy")
     session.run("mypy", "--show-error-codes", *MYPY_LOCATIONS)

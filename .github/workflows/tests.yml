@@ -7,7 +7,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-    name: Tests on ${{ matrix.os }}
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+    name: Tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -15,7 +16,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: ${{ matrix.python-version }}
           architecture: x64
 
       - name: Checkout Austin development branch
@@ -34,7 +35,7 @@ jobs:
       - name: Compile Austin on Windows
         run: |
           cd $env:GITHUB_WORKSPACE/austin
-          gcc.exe -O3 -o src/austin.exe src/*.c -lpsapi -Wall -Os -s
+          gcc.exe -O3 -o src/austin.exe src/*.c -lpsapi -lntdll -Wall -Os -s
         if: startsWith(matrix.os, 'windows')
 
       - name: Compile Austin on macOS
@@ -66,10 +67,10 @@ jobs:
           nox
         if: "startsWith(matrix.os, 'windows')"
 
-      - name: Publish coverage metrics
-        run: |
-          cd $GITHUB_WORKSPACE/main
-          nox -rs coverage
-        if: startsWith(matrix.os, 'ubuntu')
-        env:
-          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
+      # - name: Publish coverage metrics
+      #   run: |
+      #     cd $GITHUB_WORKSPACE/main
+      #     nox -rs coverage
+      #   if: startsWith(matrix.os, 'ubuntu')
+      #   env:
+      #     CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
