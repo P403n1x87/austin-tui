@@ -52,7 +52,7 @@ class Palette:
         try:
             return getattr(self, name)
         except KeyError:
-            raise PaletteError(f"The palette has no color '{name}'")
+            raise PaletteError(f"The palette has no color '{name}'") from None
 
     def __getattr__(self, name: str) -> int:
         """Convenience accessor for colors from the palette."""

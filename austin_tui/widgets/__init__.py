@@ -147,7 +147,7 @@ class Container(Widget):
         except KeyError:
             raise ContainerError(
                 f"Widget {self.name} does not contain the child widget {name}"
-            )
+            ) from None
 
     def refresh(self) -> None:
         """Refresh child widgets."""

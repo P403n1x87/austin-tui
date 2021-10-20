@@ -198,7 +198,7 @@ class ViewBuilder:
         try:
             view = _find_class(view_class)(**view_node.attrib)
         except _ClassNotFoundError:
-            raise ViewBuilderError(f"Cannot find view class '{view_class}'")
+            raise ViewBuilderError(f"Cannot find view class '{view_class}'") from None
 
         root, *rest = view_node
         view.root_widget = view._build(root)

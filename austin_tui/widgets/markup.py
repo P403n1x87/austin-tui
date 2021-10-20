@@ -91,7 +91,12 @@ class AttrStringChunk(Writable):
         """
         text = _unescape(self.text)
         text = text[:maxlen] if maxlen is not None else text
-        window.addstr(y, x, text, self.attr)
+        try:
+            window.addstr(y, x, text, self.attr)
+        except Exception:
+            # This throws a _curses.error when attempting a legal write at the
+            # bottom-right corner of the screen :(.
+            pass
         return len(text)
 
     def __len__(self) -> int:
