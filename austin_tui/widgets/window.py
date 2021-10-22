@@ -36,6 +36,10 @@ class Window(Container):
         super().__init__(name)
         self.win = self
 
+    async def on_resize(self) -> bool:
+        """The resize event handler."""
+        return self.resize()
+
     def resize(self) -> bool:
         """Resize the window.
 

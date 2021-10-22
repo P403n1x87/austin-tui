@@ -22,9 +22,23 @@
 
 from abc import ABC
 import asyncio
+from asyncio.coroutines import coroutine
+from asyncio.coroutines import iscoroutine
 import curses
 import sys
-from typing import Any, Callable, Dict, List, Optional, TextIO, Type
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Coroutine,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    TextIO,
+    Type,
+    Union,
+)
 
 from importlib_resources import files
 from lxml.etree import _Comment as Comment
@@ -101,14 +115,26 @@ class View(ABC):
 
     def _create_tasks(self) -> None:
         loop = asyncio.get_event_loop()
+        event_handlers = set(self._event_handlers.values())
         self._tasks = [
             loop.create_task(coro())
             for coro in (
                 attr
                 for attr in (getattr(self, name) for name in dir(self))
-                if callable(attr) and asyncio.iscoroutinefunction(attr)
+                if callable(attr)
+                and asyncio.iscoroutinefunction(attr)
+                and attr not in event_handlers
             )
         ]
+
+    def on_exception(self, exc: Exception) -> None:
+        """Default task exception callback.
+
+        This simply closes the view and re-raises the exception. Override in
+        sub-classes with custom logic.
+        """
+        self.close()
+        raise exc
 
     async def _input_loop(self) -> None:
         if not self.root_widget:
@@ -120,11 +146,28 @@ class View(ABC):
             if not self.root_widget._win:
                 continue
 
+            # Handle user input on the root widget
             try:
-                if self._event_handlers[self.root_widget._win.getkey()]():
+                if await self._event_handlers[self.root_widget._win.getkey()]():
                     self.root_widget.refresh()
             except (KeyError, curses.error):
                 pass
+
+            # Retrieve the result of finished tasks
+            finished_tasks = []
+            running_tasks = []
+            for task in self._tasks:
+                if task.done():
+                    finished_tasks.append(task)
+                else:
+                    running_tasks.append(task)
+            self._tasks = running_tasks
+
+            for task in finished_tasks:
+                try:
+                    task.result()
+                except Exception as exc:
+                    self.on_exception(exc)
 
     def _build(self, node: Element) -> Widget:
         _validate_ns(node)
@@ -168,6 +211,27 @@ class View(ABC):
 
         self._create_tasks()
 
+    def submit_task(
+        self,
+        task: Union[
+            asyncio.Task,
+            Coroutine[None, None, None],
+            Callable[[], Any],
+        ],
+    ) -> None:
+        """Submit a task to run concurrently in the event loop.
+
+        A task can be an :class:`asyncio.Task` object, a coroutine or a plain
+        callable object. Any exception thrown within the task can be retrieved
+        from the ``on_exception`` callback.
+        """
+        if isinstance(task, asyncio.Task):
+            self._tasks.append(task)
+        elif iscoroutine(task):
+            self._tasks.append(asyncio.create_task(task))  # type: ignore[arg-type]
+        else:
+            self._tasks.append(asyncio.get_event_loop().run_in_executor(None, task))  # type: ignore[arg-type]
+
     def close(self) -> None:
         """Close the view."""
         if not self._open or not self.root_widget:
@@ -202,7 +266,7 @@ class ViewBuilder:
 
         root, *rest = view_node
         view.root_widget = view._build(root)
-        view.connect("KEY_RESIZE", view.root_widget.resize)
+        view.connect("KEY_RESIZE", view.root_widget.on_resize)
 
         def _add_children(widget: Container, node: Element) -> None:
             for child in node:

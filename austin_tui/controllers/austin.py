@@ -283,9 +283,6 @@ class AustinController(Controller):
             except IOError as e:
                 self.view.notification.set_text(f"Failed to save stats: {e}")
 
-        # TODO: This is very bad because the return value is an awaitable that
-        # we are not awaiting. If an exception is thrown then we never retrieve
-        # it. What's worse is that this could potentially mess up the output :(.
-        asyncio.get_event_loop().run_in_executor(None, _dump_stats)
+        self.view.submit_task(_dump_stats)
 
         return True

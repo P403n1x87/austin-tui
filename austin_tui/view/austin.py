@@ -44,6 +44,7 @@ class AustinView(View):
     class Event(Enum):
         """Austin View Events."""
 
+        EXCEPTION = 0
         QUIT = 1
 
     def __init__(
@@ -63,14 +64,22 @@ class AustinView(View):
 
         self._stopped = False
 
-    def on_quit(self) -> bool:
+    def on_exception(self, exc: Exception) -> None:
+        """The on exception Austin view handler."""
+        if not self.callback:
+            raise RuntimeError(
+                "AustinTUI requires a callback to handle exception events."
+            )
+        self.callback(self.Event.EXCEPTION, exc)
+
+    async def on_quit(self) -> bool:
         """Handle Quit event."""
         if not self.callback:
             raise RuntimeError("AustinTUI requires a callback to handle quit events.")
         self.callback(self.Event.QUIT, None)
         return False
 
-    def on_next_thread(self) -> bool:
+    async def on_next_thread(self) -> bool:
         """Handle next thread event."""
         if self._austin_controller.push(AustinEvent.CHANGE_THREAD, ThreadNav.NEXT):
             self.table.draw()
@@ -78,7 +87,7 @@ class AustinView(View):
             return True
         return False
 
-    def on_previous_thread(self) -> bool:
+    async def on_previous_thread(self) -> bool:
         """Handle previous thread event."""
         if self._austin_controller.push(AustinEvent.CHANGE_THREAD, ThreadNav.PREV):
             self.table.draw()
@@ -86,7 +95,7 @@ class AustinView(View):
             return True
         return False
 
-    def on_full_mode_toggled(self) -> bool:
+    async def on_full_mode_toggled(self) -> bool:
         """Handle Full Mode toggle."""
         self.full_mode_cmd.toggle()
         self._austin_controller.push(AustinEvent.TOGGLE_FULL_MODE)
@@ -94,31 +103,31 @@ class AustinView(View):
         self.stats_view.refresh()
         return True
 
-    def on_save(self, data: Any = None) -> bool:
+    async def on_save(self, data: Any = None) -> bool:
         """Handle Save event."""
         self.notification.set_text("Saving collected statistics ...")
         self.root_widget.refresh()
         return self._austin_controller.push(AustinEvent.SAVE)
 
-    def on_table_up(self, data: Any = None) -> bool:
+    async def on_table_up(self, data: Any = None) -> bool:
         """Handle Up Arrow on the table widget."""
         self.stats_view.scroll_up()
         self.stats_view.refresh()
         return False
 
-    def on_table_down(self, data: Any = None) -> bool:
+    async def on_table_down(self, data: Any = None) -> bool:
         """Handle Down Arrow on the table widget."""
         self.stats_view.scroll_down()
         self.stats_view.refresh()
         return False
 
-    def on_table_pgup(self, data: Any = None) -> bool:
+    async def on_table_pgup(self, data: Any = None) -> bool:
         """Handle Page Up on the table widget."""
         self.stats_view.scroll_up(self.table.height - 1)
         self.stats_view.refresh()
         return False
 
-    def on_table_pgdown(self, data: Any = None) -> bool:
+    async def on_table_pgdown(self, data: Any = None) -> bool:
         """Handle Page Down on the table widget."""
         self.stats_view.scroll_down(self.table.height - 1)
         self.stats_view.refresh()

@@ -52,7 +52,7 @@ profile = "google"
 austin-tui = "austin_tui.__main__:main"
 
 [tool.poetry.dependencies]
-austin-python = {version = "^1.0.0*", allow-prereleases = true}
+austin-python = {version = "^1.1.0*", allow-prereleases = true}
 importlib-resources = "^2.0.1"
 lxml = "^4.5.1"
 python = "^3.6"

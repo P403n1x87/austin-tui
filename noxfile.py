@@ -56,13 +56,13 @@ def lint(session):
     session.run("flake8", *LINT_LOCATIONS, "--exclude", *LINT_EXCLUDES)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.9")
 def mypy(session):
     session.install("mypy")
     session.run("mypy", "--show-error-codes", *MYPY_LOCATIONS)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.9")
 def coverage(session):
     """Upload coverage data."""
     install_with_constraints(session, "coverage[toml]", "codecov")

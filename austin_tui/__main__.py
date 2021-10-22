@@ -23,7 +23,7 @@
 import asyncio
 import sys
 from textwrap import wrap
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 from austin import AustinError
 from austin.aio import AsyncAustin
@@ -114,10 +114,15 @@ class AustinTUI(AsyncAustin):
     def on_view_event(self, event: AustinView.Event, data: Any = None) -> None:
         """View events handler."""
 
-        def _unhandled() -> None:
+        def _unhandled(_: Any) -> None:
             raise RuntimeError(f"Unhandled view event: {event}")
 
-        {AustinView.Event.QUIT: self.shutdown}.get(event, _unhandled)()
+        {
+            AustinView.Event.QUIT: self.on_shutdown,
+            AustinView.Event.EXCEPTION: self.on_exception,
+        }.get(event, _unhandled)(
+            data
+        )  # type: ignore[operator]
 
     async def start(self, args: List[str]) -> None:
         """Start Austin and catch any exceptions."""
@@ -156,6 +161,15 @@ class AustinTUI(AsyncAustin):
             pass
 
         asyncio.get_event_loop().stop()
+
+    def on_shutdown(self, _: Any = None) -> None:
+        """The shutdown view event handler."""
+        self.shutdown()
+
+    def on_exception(self, exc: Exception) -> None:
+        """The exception view event handler."""
+        self.shutdown()
+        raise exc
 
 
 def main() -> None:
