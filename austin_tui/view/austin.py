@@ -25,12 +25,7 @@ from enum import Enum
 from typing import Any, Callable, Optional
 
 from austin_tui import AustinProfileMode
-from austin_tui.controllers.austin import AustinController
-from austin_tui.controllers.austin import AustinEvent
-from austin_tui.controllers.austin import ThreadNav
-from austin_tui.controllers.system import fmt_time as _fmt_time
-from austin_tui.controllers.system import SystemController
-from austin_tui.controllers.system import SystemEvent
+from austin_tui.adapters import fmt_time as _fmt_time
 from austin_tui.view import View
 from austin_tui.widgets.markup import AttrString
 from austin_tui.widgets.markup import AttrStringChunk
@@ -58,10 +53,6 @@ class AustinView(View):
         self.mode = mode
         self.callback = callback
 
-        # Create controllers
-        self._austin_controller = AustinController(self)
-        self._system_controller = SystemController(self)
-
         self._stopped = False
 
     def on_exception(self, exc: Exception) -> None:
@@ -79,35 +70,15 @@ class AustinView(View):
         self.callback(self.Event.QUIT, None)
         return False
 
-    async def on_next_thread(self) -> bool:
-        """Handle next thread event."""
-        if self._austin_controller.push(AustinEvent.CHANGE_THREAD, ThreadNav.NEXT):
-            self.table.draw()
-            self.stats_view.refresh()
-            return True
-        return False
-
-    async def on_previous_thread(self) -> bool:
-        """Handle previous thread event."""
-        if self._austin_controller.push(AustinEvent.CHANGE_THREAD, ThreadNav.PREV):
-            self.table.draw()
-            self.stats_view.refresh()
-            return True
-        return False
-
     async def on_full_mode_toggled(self) -> bool:
         """Handle Full Mode toggle."""
         self.full_mode_cmd.toggle()
-        self._austin_controller.push(AustinEvent.TOGGLE_FULL_MODE)
-        self.table.draw()
-        self.stats_view.refresh()
         return True
 
     async def on_save(self, data: Any = None) -> bool:
         """Handle Save event."""
         self.notification.set_text("Saving collected statistics ...")
-        self.root_widget.refresh()
-        return self._austin_controller.push(AustinEvent.SAVE)
+        return True
 
     async def on_table_up(self, data: Any = None) -> bool:
         """Handle Up Arrow on the table widget."""
@@ -133,31 +104,28 @@ class AustinView(View):
         self.stats_view.refresh()
         return False
 
+    async def on_play_pause(self, _: Any = None) -> bool:
+        """Play/pause handler."""
+        if self._stopped:
+            return False
+
+        self.play_pause_cmd.toggle()
+        self.play_pause_label.set_text(
+            "Resume" if self.play_pause_cmd.state else "Pause"
+        )
+        self.logo.set_color("paused" if self.play_pause_cmd.state else "running")
+        return True
+
     def open(self) -> None:
         """Open the view."""
         super().open()
 
-        self._austin_controller.push(AustinEvent.START)
-        self._system_controller.push(SystemEvent.START)
         self.logo.set_color("running")
 
         self.profile_mode.set_text(f"{self.mode.value} Profile")
 
         self.table.draw()
         self.table.refresh()
-
-    def _update(self) -> None:
-        if self._austin_controller.push(AustinEvent.UPDATE):
-            self.table.draw()
-        self._system_controller.push(SystemEvent.UPDATE)
-
-    async def update_loop(self) -> None:
-        """The UI update loop."""
-        while not self._stopped and self.is_open and self.root_widget:
-            self._update()
-            self.root_widget.refresh()
-
-            await asyncio.sleep(1)
 
     def stop(self) -> None:
         """Stop Austin view."""
@@ -168,9 +136,7 @@ class AustinView(View):
         self.logo.set_color("stopped")
         self.cpu.set_text("--%")
         self.mem.set_text("--M")
-
-        self._system_controller.push(SystemEvent.STOP)
-        self._austin_controller.push(AustinEvent.UPDATE)
+        self.play_pause_cmd.set_color("disabled")
 
         self.table.draw()
         self.root_widget.refresh()

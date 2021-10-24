@@ -20,6 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from copy import deepcopy
 from time import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -30,7 +31,6 @@ from austin.stats import MetricType
 from austin.stats import Sample
 
 from austin_tui import AustinProfileMode
-from austin_tui.models import Model
 
 
 class OrderedSet:
@@ -74,25 +74,18 @@ class OrderedSet:
         return type(self).__name__ + repr(self._items)
 
 
-class AustinModel(Model):
-    """Austin model.
+class AustinModel:
+    """Austin model."""
 
-    This is a borg.
-    """
-
-    __borg__: Dict[str, Any] = {}
-
-    def __init__(self, mode: AustinProfileMode) -> None:
-        self.__dict__ = self.__borg__
-
-        self.mode = mode
+    def __init__(self) -> None:
+        self.mode = None
 
         self._samples = 0
         self._invalids = 0
         self._last_stack: Dict[str, Sample] = {}
         self._stats = AustinStats(
             AustinStatsType.MEMORY
-            if mode is AustinProfileMode.MEMORY
+            if self.mode is AustinProfileMode.MEMORY
             else AustinStatsType.WALL
         )
         self._stats.timestamp = time()
@@ -101,6 +94,7 @@ class AustinModel(Model):
         self._python_version: Optional[str] = None
 
         self._threads = OrderedSet()
+        self._current_thread = 0
 
     def get_versions(self) -> Tuple[Optional[str], Optional[str]]:
         """Get Austin and Python versions."""
@@ -153,3 +147,18 @@ class AustinModel(Model):
     def error_rate(self) -> float:
         """Get the error rate."""
         return self._invalids / self._samples
+
+    @property
+    def current_thread(self) -> int:
+        """Get the currently active thread."""
+        return self._current_thread
+
+    @current_thread.setter
+    def current_thread(self, n: int) -> None:
+        """Set the currently active thread."""
+        assert 0 <= n <= len(self._threads)
+        self._current_thread = n
+
+    def freeze(self) -> "AustinModel":
+        """Freeze the model."""
+        return deepcopy(self)

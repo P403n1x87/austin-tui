@@ -201,6 +201,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           width="6"
           align="center" />
 
+        <aui:ToggleLabel name="play_pause_cmd"
+          text="P"
+          align="center"
+          width="3"
+          on="cmd_on"
+          off="cmd_off"
+          state="0" />
+        <aui:Label name="play_pause_label"
+          text="Pause"
+          width="8"
+          align="center" />
+
         <aui:Label name="notification"
           color="notify"
           align="right" />
@@ -214,6 +226,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
   <aui:signal key="q" handler="on_quit"              />
   <aui:signal key="f" handler="on_full_mode_toggled" />
   <aui:signal key="s" handler="on_save"              />
+  <aui:signal key="p" handler="on_play_pause"        />
 
   <aui:signal key="KEY_LEFT"  handler="on_previous_thread" />
   <aui:signal key="KEY_RIGHT" handler="on_next_thread"     />
@@ -228,7 +241,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 
   <aui:palette>
     <aui:color name="stopped"  fg="1"   />
+    <aui:color name="paused"   fg="3"   />
     <aui:color name="running"  fg="10"  />
+    <aui:color name="disabled" bg="242" />
+
     <aui:color name="cpu"      fg="4"   />
     <aui:color name="mem"      fg="2"   />
     <aui:color name="thread"   fg="11"  />

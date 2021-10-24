@@ -22,23 +22,11 @@
 
 from abc import ABC
 import asyncio
-from asyncio.coroutines import coroutine
 from asyncio.coroutines import iscoroutine
+from collections import defaultdict
 import curses
 import sys
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Coroutine,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    TextIO,
-    Type,
-    Union,
-)
+from typing import Any, Callable, Coroutine, Dict, List, Optional, TextIO, Type, Union
 
 from importlib_resources import files
 from lxml.etree import _Comment as Comment
@@ -105,7 +93,7 @@ class View(ABC):
     def __init__(self, name: str) -> None:
         self._tasks: List[asyncio.Task] = []
 
-        self._event_handlers: Dict[str, EventHandler] = {}
+        self._event_handlers: Dict[str, List[EventHandler]] = defaultdict(list)
 
         self._open = False
 
@@ -115,7 +103,7 @@ class View(ABC):
 
     def _create_tasks(self) -> None:
         loop = asyncio.get_event_loop()
-        event_handlers = set(self._event_handlers.values())
+        event_handlers = set(_ for hs in self._event_handlers.values() for _ in hs)
         self._tasks = [
             loop.create_task(coro())
             for coro in (
@@ -133,41 +121,46 @@ class View(ABC):
         This simply closes the view and re-raises the exception. Override in
         sub-classes with custom logic.
         """
-        self.close()
         raise exc
 
     async def _input_loop(self) -> None:
-        if not self.root_widget:
-            raise RuntimeError("Missing root widget")
+        try:
+            if not self.root_widget:
+                raise RuntimeError("Missing root widget")
 
-        while self._open:
-            await asyncio.sleep(0.015)
+            while self._open:
+                await asyncio.sleep(0.015)
 
-            if not self.root_widget._win:
-                continue
+                if not self.root_widget._win:
+                    continue
 
-            # Handle user input on the root widget
-            try:
-                if await self._event_handlers[self.root_widget._win.getkey()]():
-                    self.root_widget.refresh()
-            except (KeyError, curses.error):
-                pass
-
-            # Retrieve the result of finished tasks
-            finished_tasks = []
-            running_tasks = []
-            for task in self._tasks:
-                if task.done():
-                    finished_tasks.append(task)
-                else:
-                    running_tasks.append(task)
-            self._tasks = running_tasks
-
-            for task in finished_tasks:
+                # Handle user input on the root widget
                 try:
+                    event = self.root_widget._win.getkey()
+                    if event in self._event_handlers:
+                        done, pending = await asyncio.wait(
+                            [_() for _ in self._event_handlers[event]]
+                        )
+                        assert not pending
+                        if any(_.result() for _ in done):
+                            self.root_widget.refresh()
+                except (KeyError, curses.error):
+                    pass
+
+                # Retrieve the result of finished tasks
+                finished_tasks = []
+                running_tasks = []
+                for task in self._tasks:
+                    if task.done():
+                        finished_tasks.append(task)
+                    else:
+                        running_tasks.append(task)
+                self._tasks = running_tasks
+
+                for task in finished_tasks:
                     task.result()
-                except Exception as exc:
-                    self.on_exception(exc)
+        except Exception as exc:
+            self.on_exception(exc)
 
     def _build(self, node: Element) -> Widget:
         _validate_ns(node)
@@ -185,7 +178,9 @@ class View(ABC):
 
     def connect(self, event: str, handler: EventHandler) -> None:
         """Connect event handlers."""
-        self._event_handlers[event] = handler
+        if handler is None:
+            raise ValueError(f"{handler} is not a valid handler")
+        self._event_handlers[event].append(handler)
 
     def markup(self, text: Any) -> AttrString:
         """Convert a markup string into an attribute string."""
@@ -234,15 +229,14 @@ class View(ABC):
 
     def close(self) -> None:
         """Close the view."""
-        if not self._open or not self.root_widget:
-            return
-
-        self.root_widget.hide()
+        if self._open and self.root_widget:
+            self.root_widget.hide()
 
         for task in self._tasks:
             task.cancel()
+            if task.done():
+                task.result()
 
-        task = []
         self._open = False
 
     @property
@@ -254,17 +248,21 @@ class View(ABC):
 class ViewBuilder:
     """View builder class."""
 
-    @staticmethod
-    def _parse(view_node: Element) -> View:
+    def __init__(self, view_node: Element) -> None:
         _validate_ns(view_node)
+        self._root = view_node
+        self._signals: Dict[str, str] = {}
+        self._autoconnect = False
+        self._view: Optional[View] = None
 
-        view_class = QName(view_node).localname
+    def _parse(self) -> View:
+        view_class = QName(self._root).localname
         try:
-            view = _find_class(view_class)(**view_node.attrib)
+            view = _find_class(view_class)(**self._root.attrib)
         except _ClassNotFoundError:
             raise ViewBuilderError(f"Cannot find view class '{view_class}'") from None
 
-        root, *rest = view_node
+        root, *rest = self._root
         view.root_widget = view._build(root)
         view.connect("KEY_RESIZE", view.root_widget.on_resize)
 
@@ -286,15 +284,7 @@ class ViewBuilder:
             if _issignal(node):
                 event = node.attrib["key"]
                 handler = node.attrib["handler"]
-                try:
-                    method = getattr(view, handler)
-                except Exception as e:
-                    raise ViewBuilderError(
-                        f"View '{view.name}' of type {type(view).__name__} "
-                        f"does not have signal handler '{handler}'"
-                    ) from e
-                node.attrib
-                view.connect(event=event, handler=method)
+                self._signals[event] = handler
             elif _ispalette(node):
                 for color in node:
                     if isinstance(color, Comment):
@@ -305,15 +295,48 @@ class ViewBuilder:
 
         return view
 
-    @staticmethod
-    def from_stream(stream: TextIO) -> View:
-        """Build view from a stream."""
-        return ViewBuilder._parse(parse_xml_stream(stream).getroot())
+    def autoconnect(self, *controllers: Any) -> None:
+        """Auto-connect event handlers.
 
-    @staticmethod
-    def from_resource(module: str, resource: str) -> View:
+        If a view has been built, this method allows passing objects that hold
+        all the necessary event handlers that are declared in the UI resource.
+        Any unconnected handlers will cause an exception to be raised.
+        """
+        if self._view is None:
+            raise RuntimeError("View has not been built yet.")
+        if self._autoconnect:
+            raise RuntimeError("Event handlers already autoconnected.")
+
+        view = self._view
+        holders = [view, *controllers]
+        for event, handler in self._signals.items():
+            try:
+                methods = [getattr(_, handler) for _ in holders if hasattr(_, handler)]
+                if not methods:
+                    raise AttributeError()
+                for method in methods:
+                    view.connect(event=event, handler=method)
+            except Exception as e:
+                raise ViewBuilderError(
+                    f"Cannot autoconnect handlers for '{handler}' to event '{event}'"
+                ) from e
+
+        self._autoconnect = True
+
+    def build(self) -> View:
+        """Build the view."""
+        self._view = view = self._parse()
+        return view
+
+    @classmethod
+    def from_stream(cls, stream: TextIO) -> "ViewBuilder":
+        """Build view from a stream."""
+        return cls(parse_xml_stream(stream).getroot())
+
+    @classmethod
+    def from_resource(cls, module: str, resource: str) -> "ViewBuilder":
         """Build view from a resource file."""
-        return ViewBuilder._parse(
+        return cls(
             parse_xml_string(
                 files(module).joinpath(resource).read_text(encoding="utf8").encode()
             )
