@@ -96,6 +96,8 @@ class AustinTUI(AsyncAustin):
 
         self._controller.start()
 
+        self._view.set_mode(self._meta["mode"])
+
         self._view.pid_label.set_text("PPID" if self._args.children else "PID")
         self._view.pid.set_text(child_process.pid)
 

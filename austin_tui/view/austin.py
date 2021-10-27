@@ -182,3 +182,14 @@ class AustinView(View):
     ) -> AttrStringChunk:
         """Scale a time value and return an attribute string chunk."""
         return self._scaler(min(time / 1e4 / duration, 100), active)
+
+    def set_mode(self, mode: str) -> None:
+        """Set profiling mode."""
+        self.profile_mode.set_text(
+            {
+                "wall": "Wall Time Profile",
+                "cpu": "CPU Time Profile",
+                "memory": "Memory Profile",
+            }[mode]
+        )
+        self.profile_mode.set_color(f"mode_{mode}")

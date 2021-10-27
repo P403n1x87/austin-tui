@@ -245,6 +245,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <aui:color name="running"  fg="10"  />
     <aui:color name="disabled" bg="242" />
 
+    <aui:color name="mode_cpu"    fg="206"  />
+    <aui:color name="mode_wall"   fg="227"  />
+    <aui:color name="mode_memory" fg="46"   />
+
     <aui:color name="cpu"      fg="4"   />
     <aui:color name="mem"      fg="2"   />
     <aui:color name="thread"   fg="11"  />
