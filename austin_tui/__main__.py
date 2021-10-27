@@ -32,7 +32,7 @@ from austin.cli import AustinCommandLineError
 from psutil import Process
 
 from austin_tui import AustinProfileMode
-from austin_tui.models import AustinModel
+from austin_tui.controller import AustinTUIController
 from austin_tui.view import ViewBuilder
 from austin_tui.view.austin import AustinView
 
@@ -74,12 +74,11 @@ class AustinTUI(AsyncAustin):
 
         self._args = AustinTUIArgumentParser().parse_args()
 
-        self._view: AustinView = ViewBuilder.from_resource(  # type: ignore[assignment]
-            "austin_tui.view", "tui.austinui"
-        )
+        self._controller = AustinTUIController()
+        self._view = self._controller.view
+
         mode = AustinProfileMode.MEMORY if self._args.memory else AustinProfileMode.TIME
         self._view.mode = mode
-        self._model = AustinModel(mode)
 
         self._view.callback = self.on_view_event
 
@@ -87,15 +86,17 @@ class AustinTUI(AsyncAustin):
 
     def on_sample_received(self, sample: str) -> None:
         """Austin sample received callback."""
-        self._model.update(sample)
+        self._controller.model.austin.update(sample)
 
     def on_ready(
         self, austin_process: Process, child_process: Process, command_line: str
     ) -> None:
         """Austin ready callback."""
-        self._view._system_controller.set_child_process(child_process)
+        self._controller.model.system.set_child_process(child_process)
 
-        self._view.open()
+        self._controller.start()
+
+        self._view.set_mode(self._meta["mode"])
 
         self._view.pid_label.set_text("PPID" if self._args.children else "PID")
         self._view.pid.set_text(child_process.pid)
@@ -109,6 +110,9 @@ class AustinTUI(AsyncAustin):
     def on_terminate(self, stats: str) -> None:
         """Austin terminate callback."""
         self._global_stats = stats
+        self._controller.stop()
+        self._controller.update()
+
         self._view.stop()
 
     def on_view_event(self, event: AustinView.Event, data: Any = None) -> None:
@@ -127,7 +131,7 @@ class AustinTUI(AsyncAustin):
     async def start(self, args: List[str]) -> None:
         """Start Austin and catch any exceptions."""
         try:
-            print("🏁 Starting the Austin TUI ...", end="")
+            print("🏁 Starting the Austin TUI ...", end="", flush=True)
             await super().start(args)
         except Exception:
             self.shutdown()
@@ -152,9 +156,6 @@ class AustinTUI(AsyncAustin):
 
     def shutdown(self) -> None:
         """Shutdown the TUI."""
-        self._view.close()
-        print("\r\033[1K", end="")
-
         try:
             self.terminate()
         except AustinError:

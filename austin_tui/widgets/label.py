@@ -213,6 +213,11 @@ class ToggleLabel(Label):
             ellipsize=ellipsize,
         )
 
+    @property
+    def state(self) -> bool:
+        """Get the toggle state."""
+        return bool(self._state)
+
     def toggle(self) -> bool:
         """Toggle the color."""
         self._state = 1 - self._state

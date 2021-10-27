@@ -25,22 +25,31 @@ import time
 from psutil import NoSuchProcess
 from psutil import Process
 
-from austin_tui import AustinProfileMode
-from austin_tui.models import Model
-
 Seconds = float
 Percentage = float
 Bytes = int
 
 
-class SystemModel(Model):
+class FrozenSystemModel:
+    """Frozen system model data."""
+
+    __slots__ = ("duration", "max_memory")
+
+    def __init__(self, duration: Seconds, max_memory: Bytes) -> None:
+        self.duration = duration
+        self.max_memory = max_memory
+
+
+class SystemModel:
     """System statistics model."""
 
-    def __init__(self, mode: AustinProfileMode) -> None:
+    def __init__(self) -> None:
         self._start_time: Seconds = 0
         self._end_time: Seconds = 0
 
         self._max_mem: Bytes = 0
+
+        self.child_process = None
 
     def start(self) -> None:
         """Start the model."""
@@ -58,6 +67,10 @@ class SystemModel(Model):
             if self._start_time
             else 0
         )
+
+    def set_child_process(self, child_process: Process) -> None:
+        """Set the child process."""
+        self.child_process = child_process
 
     def get_cpu(self, process: Process) -> Percentage:
         """Get the process CPU usage."""
@@ -79,3 +92,7 @@ class SystemModel(Model):
     def max_memory(self) -> Bytes:
         """Return the maximum memory usage seen so far."""
         return self._max_mem
+
+    def freeze(self) -> FrozenSystemModel:
+        """Freeze the model data."""
+        return FrozenSystemModel(self.duration, self.max_memory)
