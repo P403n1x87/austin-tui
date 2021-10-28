@@ -201,6 +201,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           width="6"
           align="center" />
 
+        <aui:Label name="threshold_pm"
+          text="+/-"
+          align="center"
+          width="5"
+          color="cmd_off" />
+        <aui:Label name="threshold_pm_label"
+          text="Thrshld"
+          width="9"
+          align="center" />
+
         <aui:ToggleLabel name="play_pause_cmd"
           text="P"
           align="center"
@@ -237,6 +247,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
   <aui:signal key="KEY_PPAGE" handler="on_table_pgup"   />
   <aui:signal key="KEY_NPAGE" handler="on_table_pgdown" />
 
+  <aui:signal key="+" handler="on_threshold_up"   />
+  <aui:signal key="-" handler="on_threshold_down" />
+
   <!-- Palette -->
 
   <aui:palette>
@@ -267,10 +280,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <aui:color name="iheat80"  fg="94"  />
     <aui:color name="iheat100" fg="88"  />
 
-    <aui:color name="cmd_on"   bg="202" />
+    <aui:color name="cmd_on"   bg="14" />
     <aui:color name="cmd_off"  bg="18"  />
 
     <aui:color name="filename" fg="94"  />
     <aui:color name="lineno"   fg="30"  />
+
+    <aui:color name="exec"     fg="2"  />
   </aui:palette>
 </aui:AustinView>

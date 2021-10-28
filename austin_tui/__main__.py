@@ -93,6 +93,8 @@ class AustinTUI(AsyncAustin):
     ) -> None:
         """Austin ready callback."""
         self._controller.model.system.set_child_process(child_process)
+        self._controller.model.austin.set_metadata(self._meta)
+        self._controller.model.austin.set_command_line(command_line)
 
         self._controller.start()
 
@@ -104,8 +106,6 @@ class AustinTUI(AsyncAustin):
         self._view.thread_name_label.set_text(
             "{}TID".format("PID:" if self._args.children else "")
         )
-
-        self._view.cmd_line.set_text(command_line)
 
     def on_terminate(self, stats: str) -> None:
         """Austin terminate callback."""

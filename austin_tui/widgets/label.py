@@ -136,12 +136,15 @@ class Label(Widget):
             return self.text.write(win, self.y, x, width) > 0
 
         attr = self.attr
-        format = "{:" + f"{self.align.value}{width}" + "}"
+        format = "{:" + f"{self.align.value}{max(0, width)}" + "}"
 
         for i, line in enumerate(self.text.split(r"\n")):
             if i >= self.height:
                 break
-            text = format.format(line or "")
+            try:
+                text = format.format(line or "")
+            except ValueError:
+                text = ""
             if self.ellipsize:
                 text = ell(text, width)
             try:

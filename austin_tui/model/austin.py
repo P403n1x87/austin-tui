@@ -96,6 +96,14 @@ class AustinModel:
         self._threads = OrderedSet()
         self._current_thread = 0
 
+        self.metadata: Optional[Dict[str, str]] = None
+        self.threshold = 0.0
+        self.command_line: Optional[str] = None
+
+    def set_command_line(self, command_line: str) -> None:
+        """Set the command line."""
+        self.command_line = command_line
+
     def get_versions(self) -> Tuple[Optional[str], Optional[str]]:
         """Get Austin and Python versions."""
         return self._austin_version, self._python_version
@@ -104,6 +112,10 @@ class AustinModel:
         """Set Austin and Python versions."""
         self._austin_version = austin_version
         self._python_version = python_version
+
+    def set_metadata(self, metadata: Dict[str, str]) -> None:
+        """Set the Austin metadata."""
+        self.metadata = metadata
 
     def update(self, raw_sample: str) -> None:
         """Update current statistics with a new sample."""

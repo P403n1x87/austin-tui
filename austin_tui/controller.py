@@ -28,6 +28,7 @@ from typing import Any
 
 from austin_tui import AustinProfileMode
 from austin_tui.adapters import Adapter
+from austin_tui.adapters import CommandLineAdapter
 from austin_tui.adapters import CountAdapter
 from austin_tui.adapters import CpuAdapter
 from austin_tui.adapters import CurrentThreadAdapter
@@ -65,6 +66,7 @@ class AustinTUIController:
     thread_name = ThreadNameAdapter
     thread_data = ThreadDataAdapter
     thread_full_data = ThreadFullDataAdapter
+    command_line = CommandLineAdapter
 
     def __init__(self) -> None:
         self._full_mode = False
@@ -124,6 +126,8 @@ class AustinTUIController:
             else (self.view.fmt_time, self.view.scale_time)
         )
         self.model.system.start()
+
+        self.command_line()
 
     def stop(self) -> None:
         """Stop event."""
@@ -215,7 +219,13 @@ class AustinTUIController:
                 buffer = StringIO()
                 model.stats.dump(buffer)
                 with open(filename, "w") as fout:
-                    fout.write(buffer.getvalue().replace(" 0 0\n", "\n"))
+                    if self.model.austin.metadata is not None:
+                        for n, v in self.model.austin.metadata.items():
+                            fout.write(f"# {n}: {v}\n")
+                        fout.write("\n")
+                    for line in buffer.getvalue().splitlines():
+                        if not line.startswith("# "):
+                            fout.write(line + "\n")
                 self.view.notification.set_text(
                     self.view.markup(f"Stats saved as <running>{filename}</running> 📝 ")
                 )
@@ -236,4 +246,31 @@ class AustinTUIController:
         self.model.toggle_freeze()
         self.update()
         self.view.notification.set_text("Paused" if self.model.frozen else "Resumed")
+        return True
+
+    def _change_threshold(self, delta: float) -> float:
+        self.model.austin.threshold += delta
+
+        if self.model.austin.threshold < 0.0:
+            self.model.austin.threshold = 0.0
+        elif self.model.austin.threshold > 1.0:
+            self.model.austin.threshold = 1.0
+
+        if self.view._stopped or self.model.frozen:
+            self.set_thread_data()
+            self.view.table.draw()
+            self.view.table.refresh()
+
+        return self.model.austin.threshold
+
+    async def on_threshold_up(self, _: Any = None) -> bool:
+        """Handle threshold up."""
+        th = self._change_threshold(0.01) * 100.0
+        self.view.notification.set_text(f"Threshold increased to {th:.0f}%")
+        return True
+
+    async def on_threshold_down(self, _: Any = None) -> bool:
+        """Handle threshold down."""
+        th = self._change_threshold(-0.01) * 100.0
+        self.view.notification.set_text(f"Threshold decreased to {th:.0f}%")
         return True

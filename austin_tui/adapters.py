@@ -32,6 +32,7 @@ from austin_tui.model.system import FrozenSystemModel
 from austin_tui.model.system import Percentage
 from austin_tui.model.system import SystemModel
 from austin_tui.view import View
+from austin_tui.widgets.markup import AttrString
 from austin_tui.widgets.table import TableData
 
 
@@ -105,6 +106,20 @@ class FreezableAdapter(Adapter):
     def frozen(self) -> bool:
         """The freeze status of the adapter."""
         return self._frozen
+
+
+class CommandLineAdapter(FreezableAdapter):
+    """Command line adapter."""
+
+    def transform(self) -> AttrString:
+        """Retrieve the command line."""
+        cmd = self._model.austin.command_line
+        exec, _, args = cmd.partition(" ")
+        return self._view.markup(f"<exec><b>{exec}</b></exec> {args}")
+
+    def update(self, data: AttrString) -> bool:
+        """Update the widget."""
+        return self._view.cmd_line.set_text(data)
 
 
 class CountAdapter(FreezableAdapter):
@@ -250,6 +265,11 @@ class ThreadDataAdapter(BaseThreadDataAdapter):
         )
         for frame in frames:
             child_frame_stats = container[frame]
+            if (
+                child_frame_stats.total.value / 1e6 / max_scale
+                < self._model.austin.threshold
+            ):
+                break
             frame_stats.append(
                 [
                     formatter(child_frame_stats.own.value),
@@ -300,6 +320,8 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
             active_bucket: Optional[dict] = None,
             active_parent: bool = True,
         ) -> None:
+            if stats.total.value / 1e6 / max_scale < self._model.austin.threshold:
+                return
             try:
                 active = (
                     active_bucket is not None
