@@ -134,18 +134,6 @@ class CountAdapter(FreezableAdapter):
         return self._view.samples.set_text(data)
 
 
-class ThreadTotalAdapter(FreezableAdapter):
-    """Total number of threads adapter."""
-
-    def transform(self) -> int:
-        """Retrieve the number."""
-        return len(self._model.austin.threads)
-
-    def update(self, data: int) -> bool:
-        """Update the widget."""
-        return self._view.thread_total.set_text(data)
-
-
 class CpuAdapter(Adapter):
     """CPU metrics adapter."""
 
@@ -199,12 +187,18 @@ class DurationAdapter(FreezableAdapter):
 class CurrentThreadAdapter(Adapter):
     """Currently selected thread adapter."""
 
-    def transform(self) -> str:
+    def transform(self) -> Union[str, AttrString]:
         """Get current thread."""
         austin = self._model.frozen_austin if self._model.frozen else self._model.austin
-        return str(austin.current_thread + 1) if austin.threads else "--"
+        n = len(austin.threads)
+        if not n:
+            return "--/--"
 
-    def update(self, data: str) -> bool:
+        return self._view.markup(
+            f"<thread>{austin.current_thread + 1}</thread><hdrbox>/{n}</hdrbox>"
+        )
+
+    def update(self, data: Union[str, AttrString]) -> bool:
         """Update the widget."""
         return self._view.thread_num.set_text(data)
 
@@ -212,15 +206,15 @@ class CurrentThreadAdapter(Adapter):
 class ThreadNameAdapter(FreezableAdapter):
     """Currently selected thread name adapter."""
 
-    def transform(self) -> str:
+    def transform(self) -> Union[str, AttrString]:
         """Get the thread name."""
         austin = self._model.frozen_austin if self._model.frozen else self._model.austin
         if austin.threads:
-            pid, _, thread_id = austin.threads[austin.current_thread].partition(":")
-            return (f"{pid}:" if int(pid) else "") + thread_id
+            pid, _, tid = austin.threads[austin.current_thread].partition(":")
+            return self._view.markup(f"<pid><b>{pid}</b></pid>:<tid><b>{tid}</b></tid>")
         return "--:--"
 
-    def update(self, data: str) -> bool:
+    def update(self, data: Union[str, AttrString]) -> bool:
         """Update the widget."""
         return self._view.thread_name.set_text(data)
 

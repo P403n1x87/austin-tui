@@ -126,6 +126,8 @@ class AustinModel:
                 if self.mode is AustinProfileMode.MEMORY
                 else MetricType.TIME,
             )
+            if sample.metric.value < 0:
+                return
             self._stats.update(sample)
             self._stats.timestamp = time()
             thread_key = f"{sample.pid}:{sample.thread}"

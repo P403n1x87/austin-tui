@@ -128,6 +128,7 @@ class Label(Widget):
             return False
 
         if isinstance(self.text, AttrString):
+            win.addstr(self.y, self.x, " " * width, self.attr)
             x = self.x
             if self.align == TextAlign.RIGHT and len(self.text) < width:
                 x += width - len(self.text)

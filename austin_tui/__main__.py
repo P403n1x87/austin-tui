@@ -99,13 +99,8 @@ class AustinTUI(AsyncAustin):
         self._controller.start()
 
         self._view.set_mode(self._meta["mode"])
-
-        self._view.pid_label.set_text("PPID" if self._args.children else "PID")
-        self._view.pid.set_text(child_process.pid)
-
-        self._view.thread_name_label.set_text(
-            "{}TID".format("PID:" if self._args.children else "")
-        )
+        self._view.set_pid(child_process.pid, self._args.children)
+        self._view.set_python(self.python_version)
 
     def on_terminate(self, stats: str) -> None:
         """Austin terminate callback."""

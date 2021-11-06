@@ -44,71 +44,77 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         </aui:Box>
 
         <aui:Box name="inner_info_box" flow="vertical">
-          <aui:Label name="profile_mode"
-            text="Time Mode"
-            bold="true" />
+          <aui:Box name="inner_info_box_header" flow="horizontal">
+            <aui:Label name="profile_mode"
+              text="Unknown Mode"
+              bold="true" />
 
-          <aui:Box name="inner_info_box_1" flow="horizontal">
-            <aui:Label name="pid_label" text="PID" width="6" />
-            <aui:Label name="pid"
+            <aui:Label name="cpu_label" align="right" text="CPU" width="4" color="hdrbox" />
+            <aui:Label name="cpu" 
               align="right"
-              width="6"
-              bold="true" />
-
-            <aui:Label name="cmd_line_label" text="CMD " align="right" width="6" />
-            <aui:Label name="cmd_line"
-              bold="true" />
-          </aui:Box>
-
-          <aui:Box name="inner_info_box_2" flow="horizontal">
-            <aui:Label name="thread_name_label" text="TID" width="8" />
-            <aui:Label name="thread_name"
-              width="20"
-              bold="true" />
-
-            <aui:Label name="thread_num"
-              align="center"
-              width="5"
-              text="1"
-              color="thread"
-              bold="true" />
-            <aui:Label name="of" align="center" width="4" text="of" bold="true" />
-            <aui:Label name="thread_total"
-              align="center"
-              width="5"
-              text="2" />
-
-            <aui:Label name="cpu_label" align="right" text="CPU" width="5" />
-            <aui:Label name="cpu"
-              align="right"
+              color="hdrbox"
               width="6" />
             <aui:BarPlot name="cpu_plot"
               scale="100"
               init="0"
               color="cpu" />
-          </aui:Box>
 
-          <aui:Box name="inner_info_box_3" flow="horizontal">
-            <aui:Label name="samples_label" text="Samples" width="8" />
-            <aui:Label name="samples"
-              align="right"
-              width="10"
-              bold="true" />
-
-            <aui:Label name="duration_label" align="right" text="Duration" width="10" />
-            <aui:Label name="duration"
-              align="right"
-              width="10"
-              bold="true" />
-
-            <aui:Label name="mem_label" align="right" text="MEM" width="9" />
+            <aui:Label name="mem_label" align="right" text="MEM" width="6" color="hdrbox" />
             <aui:Label name="mem"
               align="right"
+              color="hdrbox"
               width="6" />
             <aui:BarPlot name="mem_plot"
               scale="100"
               init="0"
               color="mem" />
+
+            <aui:Label name="thread_num"
+              align="center"
+              width="11"
+              text="1"
+              color="hdrbox"
+              bold="true" />
+          </aui:Box>
+
+          <aui:Box name="inner_info_box_1" flow="horizontal">
+            <aui:Label name="cmd_line_label" text="Command" width="8" />
+            <aui:Label name="cmd_line"
+              bold="true" />
+          </aui:Box>
+
+          <aui:Box name="inner_info_box_2" flow="horizontal">
+            <aui:Label name="python_label" text="Python" width="7" />
+            <aui:Label name="python"
+              width="10"
+              bold="true" />
+            <aui:Label name="pid_label" text="PID" width="4" />
+            <aui:Label name="pid"
+              width="12"
+              bold="true" />
+
+            <aui:Label name="thread_name_label" text="PID:TID" width="8" />
+            <aui:Label name="thread_name"
+              width="20"
+              bold="true" />
+          </aui:Box>
+
+          <aui:Box name="inner_info_box_3" flow="horizontal">
+            <aui:Label name="samples_label" text="Samples" width="8" />
+            <aui:Label name="samples"
+              width="9"
+              bold="true" />
+
+            <aui:Label name="duration_label" text="⏲️" width="4" />
+            <aui:Label name="duration"
+              width="12"
+              bold="true" />
+
+            <aui:Label name="threshold_label" text="Threshold" width="10" />
+            <aui:Label name="threshold"
+              width="5"
+              text="0%"
+              bold="true" />
           </aui:Box>
         </aui:Box>
       </aui:Box>
@@ -187,8 +193,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           off="cmd_off"
           state="0" />
         <aui:Label name="full_mode_label"
-          text="Full Mode"
-          width="11"
+          text="Full"
+          width="6"
           align="center" />
 
         <aui:Label name="save_cmd"
@@ -246,11 +252,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 
   <aui:signal key="KEY_PPAGE" handler="on_table_pgup"   />
   <aui:signal key="KEY_NPAGE" handler="on_table_pgdown" />
+  <aui:signal key="KEY_HOME"  handler="on_table_home"   />
+  <aui:signal key="KEY_END"   handler="on_table_end"    />
 
   <aui:signal key="+" handler="on_threshold_up"   />
   <aui:signal key="-" handler="on_threshold_down" />
 
   <!-- Palette -->
+  <!-- See https://github.com/gookit/color/blob/c7dc09464b28518c2ae383fa16b989e7c0169599/_examples/images/color-256.png -->
 
   <aui:palette>
     <aui:color name="stopped"  fg="1"   />
@@ -258,13 +267,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <aui:color name="running"  fg="10"  />
     <aui:color name="disabled" bg="242" />
 
-    <aui:color name="mode_cpu"    fg="206"  />
-    <aui:color name="mode_wall"   fg="227"  />
-    <aui:color name="mode_memory" fg="46"   />
+    <aui:color name="mode_cpu"    bg="197" fg="254" />
+    <aui:color name="mode_wall"   bg="227" fg="238" />
+    <aui:color name="mode_memory" bg="46"  fg="238" />
 
-    <aui:color name="cpu"      fg="4"   />
-    <aui:color name="mem"      fg="2"   />
-    <aui:color name="thread"   fg="11"  />
+    <aui:color name="hdrbox"   bg="236"  />
+
+    <aui:color name="cpu"      fg="4" bg="238"  />
+    <aui:color name="mem"      fg="2" bg="238"  />
+
+    <aui:color name="thread"   fg="11" bg="236" />
     <aui:color name="inactive" fg="242" />
     <aui:color name="notify"   fg="246" />
 
@@ -287,5 +299,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
     <aui:color name="lineno"   fg="30"  />
 
     <aui:color name="exec"     fg="2"  />
+
+    <aui:color name="pid" fg="229" />
+    <aui:color name="tid" fg="159" />
   </aui:palette>
 </aui:AustinView>

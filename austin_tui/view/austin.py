@@ -104,6 +104,16 @@ class AustinView(View):
         self.stats_view.refresh()
         return False
 
+    async def on_table_home(self, _: Any = None) -> bool:
+        self.stats_view.top()
+        self.stats_view.refresh()
+        return False
+
+    async def on_table_end(self, _: Any = None) -> bool:
+        self.stats_view.bottom()
+        self.stats_view.refresh()
+        return False
+
     async def on_play_pause(self, _: Any = None) -> bool:
         """Play/pause handler."""
         if self._stopped:
@@ -134,8 +144,8 @@ class AustinView(View):
 
         self._stopped = True
         self.logo.set_color("stopped")
-        self.cpu.set_text("--%")
-        self.mem.set_text("--M")
+        self.cpu.set_text("--% ")
+        self.mem.set_text("--M ")
         self.play_pause_cmd.set_color("disabled")
 
         self.table.draw()
@@ -186,10 +196,20 @@ class AustinView(View):
     def set_mode(self, mode: str) -> None:
         """Set profiling mode."""
         self.profile_mode.set_text(
-            {
+            " "
+            + {
                 "wall": "Wall Time Profile",
                 "cpu": "CPU Time Profile",
                 "memory": "Memory Profile",
             }[mode]
         )
         self.profile_mode.set_color(f"mode_{mode}")
+
+    def set_pid(self, pid: int, children: bool) -> None:
+        """Set the PID."""
+        self.pid_label.set_text("PPID" if children else "PID")
+        self.pid.set_text(self.markup(f"<pid><b>{pid}</b></pid>"))
+
+    def set_python(self, version: str) -> None:
+        """Set the Python version"""
+        self.python.set_text(".".join([str(_) for _ in version]))

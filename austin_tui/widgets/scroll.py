@@ -105,6 +105,14 @@ class ScrollView(Container):
 
         self._draw_scroll_bar()
 
+    def top(self) -> None:
+        self.curr_y = 0
+        self._draw_scroll_bar()
+
+    def bottom(self) -> None:
+        self.curr_y = self.h - self.height
+        self._draw_scroll_bar()
+
     def get_view_size(self) -> Tuple[int, int]:
         """Get the scroll view size.
 

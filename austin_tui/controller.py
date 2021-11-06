@@ -37,7 +37,6 @@ from austin_tui.adapters import MemoryAdapter
 from austin_tui.adapters import ThreadDataAdapter
 from austin_tui.adapters import ThreadFullDataAdapter
 from austin_tui.adapters import ThreadNameAdapter
-from austin_tui.adapters import ThreadTotalAdapter
 from austin_tui.model import Model
 from austin_tui.view import ViewBuilder
 
@@ -61,7 +60,6 @@ class AustinTUIController:
     memory = MemoryAdapter
     duration = DurationAdapter
     samples = CountAdapter
-    threads = ThreadTotalAdapter
     current_thread = CurrentThreadAdapter
     thread_name = ThreadNameAdapter
     thread_data = ThreadDataAdapter
@@ -145,9 +143,6 @@ class AustinTUIController:
 
         # Samples count
         self.samples()
-
-        # Count total threads (across processes)
-        self.threads()
 
         if self.model.austin.stats.timestamp > self._last_timestamp:
             return self.set_thread()
@@ -266,11 +261,11 @@ class AustinTUIController:
     async def on_threshold_up(self, _: Any = None) -> bool:
         """Handle threshold up."""
         th = self._change_threshold(0.01) * 100.0
-        self.view.notification.set_text(f"Threshold increased to {th:.0f}%")
+        self.view.threshold.set_text(f"{th:.0f}%")
         return True
 
     async def on_threshold_down(self, _: Any = None) -> bool:
         """Handle threshold down."""
         th = self._change_threshold(-0.01) * 100.0
-        self.view.notification.set_text(f"Threshold decreased to {th:.0f}%")
+        self.view.threshold.set_text(f"{th:.0f}%")
         return True
