@@ -106,10 +106,12 @@ class ScrollView(Container):
         self._draw_scroll_bar()
 
     def top(self) -> None:
+        """Scroll to the top."""
         self.curr_y = 0
         self._draw_scroll_bar()
 
     def bottom(self) -> None:
+        """Scroll to the bottom."""
         self.curr_y = self.h - self.height
         self._draw_scroll_bar()
 

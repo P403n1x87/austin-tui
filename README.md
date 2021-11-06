@@ -118,6 +118,15 @@ will be able to navigate through them with the arrow keys.
 > [linked](https://pip.pypa.io/en/latest/user_guide/#installing-from-wheels)
 > page.
 
+## Thread navigation
+
+Profiling data is processed on a per-thread basis. The total number of threads
+(across all processes, if sampling child processes) is displayed in the
+top-right corner of the TUI. To navigate to a different thread, use the
+<kbd>&larr;</kbd> and <kbd>&rarr;</kbd> arrows. The PID and TID of the currently
+selected thread will appear in the middle of the top bar in the TUI.
+
+
 ## Full mode
 
 By default, Austin TUI shows you statistics of the last seen stack for each
@@ -164,12 +173,30 @@ operation on the bottom-right corner.
        alt="Austin TUI - Save notification" />
 </p>
 
+If you run the Austin TUI inside VS Code, you can benefit from the editor's
+terminal features, like using <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Left-Click</kbd>
+to hop straight into a source file at a given line. You can also leverage the
+TUI's save feature to export the collected samples and import them into the
+[Austin VS Code] extension to also get a flame graph representation.
+
+<p align="center">
+  <img src="art/austin-tui-vscode.gif"
+       style="box-shadow: #111 0px 0px 16px;"
+       alt="Austin TUI" />
+</p>
 
 ## Threshold
 
 The statistics reported by the TUI might be overwhelming, especially in full
 mode. To reduce the amout of data that gets displayed, the keys <kbd>+</kbd> and
 <kbd>-</kbd> can be used to increase or lower the `%TOTAL` threshold
+
+<p align="center">
+  <img src="art/austin-tui-threshold.png"
+       style="box-shadow: #111 0px 0px 16px;"
+       alt="Austin TUI - Threshold demonstration" />
+</p>
+
 
 # Compatibility
 
@@ -218,4 +245,5 @@ on BMC or by chipping in a few pennies on
 [Austin]: https://github.com/P403n1x87/austin
 [austin-python]: https://github.com/P403n1x87/austin-python#installation
 [Austin installation]: https://github.com/P403n1x87/austin#installation
+[Austin VS Code]: https://marketplace.visualstudio.com/items?itemName=p403n1x87.austin-vscode
 [The Austin TUI Way to Resourceful Text-based User Interfaces]: https://p403n1x87.github.io/the-austin-tui-way-to-resourceful-text-based-user-interfaces.html

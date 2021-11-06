@@ -105,11 +105,13 @@ class AustinView(View):
         return False
 
     async def on_table_home(self, _: Any = None) -> bool:
+        """Handle Home key on the table widget."""
         self.stats_view.top()
         self.stats_view.refresh()
         return False
 
     async def on_table_end(self, _: Any = None) -> bool:
+        """Handle End key on the table widget."""
         self.stats_view.bottom()
         self.stats_view.refresh()
         return False
@@ -211,5 +213,5 @@ class AustinView(View):
         self.pid.set_text(self.markup(f"<pid><b>{pid}</b></pid>"))
 
     def set_python(self, version: str) -> None:
-        """Set the Python version"""
+        """Set the Python version."""
         self.python.set_text(".".join([str(_) for _ in version]))
