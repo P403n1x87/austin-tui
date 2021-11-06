@@ -75,16 +75,17 @@ TUI Way to Resourceful Text-based User Interfaces].
 Austin TUI can be installed directly from PyPI with
 
 ~~~ bash
-pip install austin-tui --upgrade
+pipx install austin-tui
 ~~~
 
-> **NOTE** In order for the TUI to work, the Austin 2 binary needs to be on the
-> ``PATH`` environment variable. Have a look at [Austin installation]
-> instructions to see how you can easily install Austin on your platform.
+> **NOTE** In order for the TUI to work, the Austin 3 binary needs to be
+> discoverable in the ways documented by the [austin-python] library. Have a
+> look at [Austin installation] instructions to see how you can easily install
+> Austin on your platform.
 
 # Usage
 
-Once [Austin] and Austin TUI are installed, you can start using them
+Once [Austin] 3 and Austin TUI are installed, you can start using them
 straight-away. If you want to launch and profile a Python script, say
 `myscript.py`, you can do
 
@@ -95,12 +96,12 @@ austin-tui python3 myscript.py
 or, if `myscript.py` is an executable script,
 
 ~~~ bash
-austin-tui myscript.py
+austin-tui ./myscript.py
 ~~~
 
-Like [Austin], the TUI can also attach to a running Python application. To analyse
-the frame stacks of all the processes of a running WSGI server, for example, get
-hold of the PID of the parent process and do
+Like [Austin], the TUI can also attach to a running Python application. To
+analyse the frame stacks of all the processes of a running WSGI server, for
+example, get hold of the PID of the parent process and do
 
 ~~~ bash
 sudo austin-tui -Cp <pid>
@@ -130,9 +131,9 @@ similar to what top does with all the running processes on your system.
 </p>
 
 If you want to see all the collected statistics, with the frame stacks
-represented as a rooted tree, you can press `F` to enter the _Full_ mode. The
-last seen stack will be highlighted so that you also have that information
-available while in this mode.
+represented as a rooted tree, you can press <kbd>F</kbd> to enter the _Full_
+mode. The last seen stack will be highlighted so that you also have that
+information available while in this mode.
 
 <p align="center">
   <img src="art/austin-tui-full-mode.png"
@@ -140,12 +141,19 @@ available while in this mode.
        alt="Austin TUI - Full mode" />
 </p>
 
+The information that gets displayed is very dynamic and could become tricky to
+inspect. The current view can be paused by pressing <kbd>P</kbd>. To resume
+refreshing the view, press <kbd>P</kbd> again. While the view is paused,
+profiling data is still being captured and processed in the background, so that
+when the view is resumed, the latest figures are shown.
+
+
 ## Save statistics
 
 Peeking at a running Python application is nice but in many cases you would want
 to save the collected data for further offline analysis (for example, you might
 want to represent it as a flame graph). At any point, whenever you want to dump
-the collected data to a file, you can press the `S` key and a file with all the
+the collected data to a file, you can press <kbd>S</kbd> and a file with all the
 samples will be generated for you in the working directory, prefixed with
 `austin_` and followed by a timestamp. The TUI will notify of the successful
 operation on the bottom-right corner.
@@ -156,9 +164,16 @@ operation on the bottom-right corner.
        alt="Austin TUI - Save notification" />
 </p>
 
+
+## Threshold
+
+The statistics reported by the TUI might be overwhelming, especially in full
+mode. To reduce the amout of data that gets displayed, the keys <kbd>+</kbd> and
+<kbd>-</kbd> can be used to increase or lower the `%TOTAL` threshold
+
 # Compatibility
 
-Austin TUI has been tested with Python 3.6-3.9 and is known to work on
+Austin TUI has been tested with Python 3.6-3.10 and is known to work on
 **Linux**, **macOS** and **Windows**.
 
 Since Austin TUI uses [Austin] to collect samples, the same note applies here:
@@ -201,5 +216,6 @@ on BMC or by chipping in a few pennies on
 
 
 [Austin]: https://github.com/P403n1x87/austin
+[austin-python]: https://github.com/P403n1x87/austin-python#installation
 [Austin installation]: https://github.com/P403n1x87/austin#installation
 [The Austin TUI Way to Resourceful Text-based User Interfaces]: https://p403n1x87.github.io/the-austin-tui-way-to-resourceful-text-based-user-interfaces.html
