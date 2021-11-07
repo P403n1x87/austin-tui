@@ -83,6 +83,13 @@ pipx install austin-tui
 > look at [Austin installation] instructions to see how you can easily install
 > Austin on your platform.
 
+On macOS and Linux, Austin TUI and its dependencies (including Austin itself) 
+can be installed via conda with
+
+~~~ bash
+conda install -c conda-forge austin-tui
+~~~
+
 # Usage
 
 Once [Austin] 3 and Austin TUI are installed, you can start using them
