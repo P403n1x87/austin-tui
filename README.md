@@ -10,11 +10,12 @@
     <img src="https://github.com/P403n1x87/austin-tui/workflows/Tests/badge.svg"
          alt="GitHub Actions: Tests">
   </a>
-  <a href="https://travis-ci.org/P403n1x87/austin-tui">
+  <br/>
+  <!-- <a href="https://travis-ci.org/P403n1x87/austin-tui">
     <img src="https://travis-ci.org/P403n1x87/austin-tui.svg?branch=master"
          alt="Travis CI">
   </a>
-  <!-- <a href="https://codecov.io/gh/P403n1x87/austin-tui">
+  <a href="https://codecov.io/gh/P403n1x87/austin-tui">
     <img src="https://codecov.io/gh/P403n1x87/austin-tui/branch/master/graph/badge.svg"
          alt="Codecov">
   </a> -->
@@ -26,6 +27,16 @@
     <img src="https://static.pepy.tech/personalized-badge/austin-tui?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads"
          alt="PyPI Downloads">
   </a>
+  &nbsp;
+  <a href="https://anaconda.org/conda-forge/austin-tui">
+    <img src="https://anaconda.org/conda-forge/austin-tui/badges/version.svg" />
+  </a>
+  <a href="https://anaconda.org/conda-forge/austin-tui">
+    <img src="https://anaconda.org/conda-forge/austin-tui/badges/downloads.svg" />
+  </a>
+  
+  <br/>
+  
   <a href="https://github.com/P403n1x87/austin-tui/blob/master/LICENSE.md">
     <img src="https://img.shields.io/badge/license-GPLv3-ff69b4.svg"
          alt="LICENSE">
@@ -74,7 +85,7 @@ TUI Way to Resourceful Text-based User Interfaces].
 
 Austin TUI can be installed directly from PyPI with
 
-~~~ bash
+~~~ console
 pipx install austin-tui
 ~~~
 
@@ -86,7 +97,7 @@ pipx install austin-tui
 On macOS and Linux, Austin TUI and its dependencies (including Austin itself) 
 can be installed via conda with
 
-~~~ bash
+~~~ console
 conda install -c conda-forge austin-tui
 ~~~
 
@@ -96,13 +107,13 @@ Once [Austin] 3 and Austin TUI are installed, you can start using them
 straight-away. If you want to launch and profile a Python script, say
 `myscript.py`, you can do
 
-~~~ bash
+~~~ console
 austin-tui python3 myscript.py
 ~~~
 
 or, if `myscript.py` is an executable script,
 
-~~~ bash
+~~~ console
 austin-tui ./myscript.py
 ~~~
 
@@ -110,7 +121,7 @@ Like [Austin], the TUI can also attach to a running Python application. To
 analyse the frame stacks of all the processes of a running WSGI server, for
 example, get hold of the PID of the parent process and do
 
-~~~ bash
+~~~ console
 sudo austin-tui -Cp <pid>
 ~~~
 
@@ -222,7 +233,7 @@ Since Austin TUI uses [Austin] to collect samples, the same note applies here:
 As for Linux users, the use of `sudo` can be avoided by granting Austin the
 `cap_sys_ptrace` capability with, e.g.
 
-~~~
+~~~ console
 sudo setcap cap_sys_ptrace+ep `which austin`
 ~~~
 
