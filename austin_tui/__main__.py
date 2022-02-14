@@ -36,11 +36,6 @@ from austin_tui.controller import AustinTUIController
 from austin_tui.view import ViewBuilder
 from austin_tui.view.austin import AustinView
 
-try:
-    _get_all_tasks = asyncio.all_tasks  # Python 3.7+
-except AttributeError:
-    _get_all_tasks = asyncio.Task.all_tasks  # Python 3.6 compatibility
-
 
 def _print(text: str) -> None:
     for line in wrap(text, 78):

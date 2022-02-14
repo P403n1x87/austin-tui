@@ -218,7 +218,7 @@ mode. To reduce the amout of data that gets displayed, the keys <kbd>+</kbd> and
 
 # Compatibility
 
-Austin TUI has been tested with Python 3.6-3.10 and is known to work on
+Austin TUI has been tested with Python 3.7-3.10 and is known to work on
 **Linux**, **macOS** and **Windows**.
 
 Since Austin TUI uses [Austin] to collect samples, the same note applies here:

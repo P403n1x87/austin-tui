@@ -8,7 +8,7 @@ nox.options.sessions = ["lint", "mypy"]
 # ---- Configuration ----
 
 
-SUPPORTED_PYTHON_VERSIONS = ["3.6", "3.7", "3.8", "3.9", "3.10"]
+SUPPORTED_PYTHON_VERSIONS = ["3.7", "3.8", "3.9", "3.10"]
 
 PYTEST_OPTIONS = ["-vvvs", "--cov=austin_tui", "--cov-report", "term-missing"]
 
