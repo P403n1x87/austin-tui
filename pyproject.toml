@@ -27,7 +27,6 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-  "Programming Language :: Python :: 3.6",
   "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
@@ -55,7 +54,7 @@ austin-tui = "austin_tui.__main__:main"
 austin-python = {version = "^1.1.0*", allow-prereleases = true}
 importlib-resources = "^2.0.1"
 lxml = "^4.5.1"
-python = "^3.6"
+python = "^3.7"
 windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
 
 [tool.poetry.dev-dependencies]
