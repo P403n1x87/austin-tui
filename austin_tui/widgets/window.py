@@ -24,6 +24,8 @@ import curses
 from typing import Optional, Tuple
 
 from austin_tui.widgets import Container
+from austin_tui.widgets import Point
+from austin_tui.widgets import Rect
 
 
 class Window(Container):
@@ -38,20 +40,27 @@ class Window(Container):
 
     async def on_resize(self) -> bool:
         """The resize event handler."""
-        return self.resize()
+        return self.resize(Rect(pos=0, size=self.get_size()))
 
-    def resize(self) -> bool:
+    def resize(self, rect: Rect) -> bool:
         """Resize the window.
 
         This is effectively resizing just the child widget, as the window itself
         is just a logical container.
         """
-        super().resize()
+        super().resize(rect)
+
+        if self.rect == rect:
+            return False
+
+        self.rect = rect
+
+        if not self._children:
+            return False
 
         (child,) = self._children
-        child.height, child.width = self.get_size()
 
-        if child.resize():
+        if child.resize(rect):
             self.refresh()
             return True
 
@@ -63,24 +72,26 @@ class Window(Container):
             return
 
         self._win = curses.initscr()
-        curses.noecho()
-        curses.cbreak()
-        self._win.keypad(True)
         try:
-            curses.start_color()
+            curses.noecho()
+            curses.cbreak()
+            self._win.keypad(True)
+            try:
+                curses.start_color()
+            except Exception:
+                pass
+
+            curses.use_default_colors()
+            curses.curs_set(False)
+
+            self._win.clear()
+            self._win.timeout(0)  # non-blocking for async I/O
+            self._win.nodelay(True)
+
+            super().show()
         except Exception:
-            pass
-
-        curses.use_default_colors()
-        curses.curs_set(False)
-
-        self._win.clear()
-        self._win.timeout(0)  # non-blocking for async I/O
-        self._win.nodelay(True)
-
-        self.height, self.width = self.get_size()
-
-        super().show()
+            curses.endwin()
+            raise
 
     def hide(self) -> None:
         """Hide the window.
@@ -97,12 +108,13 @@ class Window(Container):
 
         self._win = None
 
-    def get_size(self) -> Tuple[int, int]:
+    def get_size(self) -> Point:
         """Get the window size.
 
         As per curses convention this returns the tuple (_height_, _width_).
         """
-        return self._win.getmaxyx()
+        y, x = self._win.getmaxyx()
+        return Point(x, y)
 
     def get_win(self) -> Optional["curses._CursesWindow"]:
         """Get the underlying curses window.

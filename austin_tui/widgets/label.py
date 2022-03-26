@@ -25,6 +25,8 @@ import curses
 from enum import Enum
 from typing import Any, Optional
 
+from austin_tui.widgets import Point
+from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
 from austin_tui.widgets.markup import AttrString
 
@@ -111,39 +113,61 @@ class Label(Widget):
     @property
     def attr(self) -> int:
         """The label attributes."""
-        return (
-            curses.color_pair(self.view.palette.get_color(self.color))
-            | (self.bold and curses.A_BOLD or 0)
-            | (self.reverse and curses.A_REVERSE or 0)
-        )
+        try:
+            return (
+                self.view
+                and curses.color_pair(self.view.palette.get_color(self.color))
+                or 0
+                | (self.bold and curses.A_BOLD or 0)
+                | (self.reverse and curses.A_REVERSE or 0)
+            )
+        except curses.error:
+            return 0
+
+    def resize(self, rect: Optional[Rect] = None) -> bool:
+        """Resize logic for the label object."""
+        width = min(self.width, rect.size.real) or rect.size.real
+        height = min(self.height, rect.size.imag) or rect.size.imag
+        new_rect = Rect(rect.pos, Point(width, height))
+        if self.rect == new_rect:
+            return False
+
+        self.rect = new_rect
+
+        self.draw()
+
+        return True
 
     def draw(self) -> bool:
         """Draw the label."""
+        if not self.win:
+            return False
+
         win = self.win.get_win()
         if not win:
             return False
 
-        width = self.width or (max(0, self.parent.width - self.x - 1))
+        width = self.size.x
         if not width:
             return False
 
         if isinstance(self.text, AttrString):
             try:
-                win.addstr(self.y, self.x, " " * width, self.attr)
+                win.addstr(self.pos.y, self.pos.x, " " * width, self.attr)
             except curses.error:
                 pass
-            x = self.x
+            x = self.pos.x
             if self.align == TextAlign.RIGHT and len(self.text) < width:
                 x += width - len(self.text)
             elif self.align == TextAlign.CENTER and len(self.text) < width:
                 x += (width - len(self.text)) >> 1
-            return self.text.write(win, self.y, x, width) > 0
+            return self.text.write(win, self.pos.y, x, width) > 0
 
         attr = self.attr
         format = "{:" + f"{self.align.value}{max(0, width)}" + "}"
 
         for i, line in enumerate(self.text.split(r"\n")):
-            if i >= self.height:
+            if i >= self.size.y:
                 break
             try:
                 text = format.format(line or "")
@@ -152,7 +176,7 @@ class Label(Widget):
             if self.ellipsize:
                 text = ell(text, width)
             try:
-                win.addstr(self.y + i, self.x, text, attr)
+                win.addstr(self.pos.y + i, self.pos.x, text, attr)
             except curses.error:
                 # Curses cannot write at the bottom right corner of the screen
                 # so we ignore this error. Be aware that this might be

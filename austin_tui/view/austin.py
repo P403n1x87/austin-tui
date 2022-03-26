@@ -94,13 +94,13 @@ class AustinView(View):
 
     async def on_table_pgup(self, data: Any = None) -> bool:
         """Handle Page Up on the table widget."""
-        self.stats_view.scroll_up(self.table.height - 1)
+        self.stats_view.scroll_page_up()
         self.stats_view.refresh()
         return False
 
     async def on_table_pgdown(self, data: Any = None) -> bool:
         """Handle Page Down on the table widget."""
-        self.stats_view.scroll_down(self.table.height - 1)
+        self.stats_view.scroll_page_down()
         self.stats_view.refresh()
         return False
 

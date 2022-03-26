@@ -24,11 +24,12 @@ from abc import ABC
 from abc import abstractmethod
 import curses
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any, List, TYPE_CHECKING
 
 from lxml import etree
 
-from austin_tui.view.palette import Palette
+if TYPE_CHECKING:
+    from austin_tui.view.palette import Palette
 
 
 def escape(text: str) -> str:
@@ -155,7 +156,7 @@ class AttrString(Writable):
         return n
 
 
-def markup(text: str, palette: Palette) -> AttrString:
+def markup(text: str, palette: "Palette") -> AttrString:
     """Use XML markup to generate an attribute string."""
     astr = AttrString()
 

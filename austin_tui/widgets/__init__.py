@@ -21,7 +21,53 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import curses
-from typing import Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+
+class Point(complex):
+    """A point object for easy vector and symplectic operations."""
+
+    def along(self, other: complex) -> "Point":
+        """Project the point along the given complex number."""
+        return Point((other.conjugate() * self).real * other / abs(other) ** 2)  # type: ignore[call-overload]
+
+    @property
+    def x(self) -> int:
+        """The x coordinate of the point."""
+        return int(self.real)
+
+    @property
+    def y(self) -> int:
+        """The y coordinate of the point."""
+        return int(self.imag)
+
+    @property
+    def to_tuple(self) -> Tuple[int, int]:
+        """Convert to the (x, y) pair."""
+        return (int(self.real), int(self.imag))
+
+
+class Rect:
+    """A rectangle object.
+
+    Represent the rectangular area that a widget is allowed to occupy. This is
+    described by a position point and a size point.
+    """
+
+    def __init__(self, pos: Union[Point, complex], size: Union[Point, complex]) -> None:
+        self.pos = Point(pos)  # type: ignore[call-overload]
+        self.size = Point(size)  # type: ignore[call-overload]
+
+    def __eq__(self, other: object) -> bool:
+        """Recangle object equality check."""
+        if not isinstance(other, Rect):
+            raise NotImplementedError()
+
+        return self.pos == other.pos and self.size == other.size
+
+    def __repr__(self) -> str:
+        """The rectangle object representation."""
+        return f"Rect(pos={self.pos}, size={self.size})"
 
 
 class ContainerError(Exception):
@@ -49,10 +95,36 @@ class Widget:
         # geometry
         self.x = 0
         self.y = 0
-        self.width = int(width or 0)
-        self.height = int(height or 0)
+        self._width = int(width or 0)
+        self._height = int(height or 0)
 
-        self._expand = [not width, not height]
+        self.pos = Point(self.x, self.y)
+        self.size = Point(self.width, self.height)
+
+    @property
+    def width(self) -> int:
+        """The widget width."""
+        return self._width
+
+    @property
+    def height(self) -> int:
+        """The widget height."""
+        return self._height
+
+    @property
+    def expand(self) -> Point:
+        """The expand directions."""
+        return Point(not self.width, not self.height)
+
+    @property
+    def rect(self) -> Rect:
+        """The widget rectangular area."""
+        return Rect(self.pos, self.size)
+
+    @rect.setter
+    def rect(self, rect: Rect) -> None:
+        self.pos = rect.pos
+        self.size = rect.size
 
     def refresh(self) -> None:
         """Refresh the widget.
@@ -87,45 +159,38 @@ class Widget:
         """
         return False
 
-    def resize(self) -> bool:
+    def resize(self, rect: Rect) -> bool:
         """Resize the widget.
 
         This is supposed to change the geometric attribute of the widgets only.
         If a re-draw is required, because any of the widget's attributes have
         changed, an explicit call to draw must be made.
 
+        The optional ``rect`` argument can be used to define the bounding
+        rectangle within which the resize is allowed to take place. This is
+        normally passed by container widgets to their children to constraint
+        their allowed area.
+
         This method should return ``True`` if a refresh of the screen is needed.
         """
         return False
 
 
-class Container(Widget):
-    """Container widget.
+class BaseContainer(Widget):
+    """Base Container widget.
 
-    A container widget is just a logical widget. Therefore it shouldn't draw
-    anything on the screen, but delegate the operation to its children.
+    A base container widget to implement container data structure for child
+    widgets.
     """
 
     def __init__(self, name: str) -> None:
-        super().__init__(name)
         self._children: List[Widget] = []
         self._children_map: Dict[str, int] = {}
+        super().__init__(name)
 
     def __getattr__(self, name: str) -> Widget:
         """Convenience accessor to child widgets."""
         return self.get_child(name)
-
-    def show(self) -> None:
-        """Show the children."""
-        for child in self._children:
-            child.show()
-
-    def draw(self) -> bool:
-        """Draw the children."""
-        refresh = False
-        for child in self._children:
-            refresh |= child.draw()
-        return refresh
 
     def add_child(self, child: Widget) -> None:
         """Add a child widget."""
@@ -148,6 +213,26 @@ class Container(Widget):
             raise ContainerError(
                 f"Widget {self.name} does not contain the child widget {name}"
             ) from None
+
+
+class Container(BaseContainer):
+    """Container widget.
+
+    A container widget is just a logical widget. Therefore it shouldn't draw
+    anything on the screen, but delegate the operation to its children.
+    """
+
+    def show(self) -> None:
+        """Show the children."""
+        for child in self._children:
+            child.show()
+
+    def draw(self) -> bool:
+        """Draw the children."""
+        refresh = False
+        for child in self._children:
+            refresh |= child.draw()
+        return refresh
 
     def refresh(self) -> None:
         """Refresh child widgets."""

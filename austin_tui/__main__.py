@@ -23,7 +23,7 @@
 import asyncio
 import sys
 from textwrap import wrap
-from typing import Any, Callable, List, Optional
+from typing import Any, List, Optional
 
 from austin import AustinError
 from austin.aio import AsyncAustin
@@ -33,7 +33,6 @@ from psutil import Process
 
 from austin_tui import AustinProfileMode
 from austin_tui.controller import AustinTUIController
-from austin_tui.view import ViewBuilder
 from austin_tui.view.austin import AustinView
 
 

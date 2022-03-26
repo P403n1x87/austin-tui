@@ -20,13 +20,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any
+from typing import List
 
 from austin_tui.widgets import Container
-from austin_tui.widgets import Widget
-
-_COORDS = ("x", "y")
-_SIZES = ("width", "height")
+from austin_tui.widgets import Point
+from austin_tui.widgets import Rect
 
 
 class Box(Container):
@@ -36,87 +34,96 @@ class Box(Container):
     """
 
     def __init__(self, name: str, flow: str) -> None:
-        super().__init__(name)
-
         if flow[0] not in ["v", "h"]:
             raise ValueError(
                 f"Invalid value '{flow}' for attribute 'flow' of widget '{type(self)}'"
             )
 
-        self.flow = {"h": 0, "v": 1}[flow[0]]
+        self.flow = {"h": 1, "v": 1j}[flow[0]]
 
-        self._expand[self.flow] = False
-        self._expand[1 - self.flow] = False
+        super().__init__(name)
 
-    def add_child(self, child: Widget) -> None:
-        """Add child to the box."""
-        super().add_child(child)
+    def _dims(self, flow: complex) -> List[int]:
+        return [
+            0
+            if child.expand.along(flow)
+            else int(abs(Point(child.width, child.height).along(flow)))
+            for child in self._children
+        ]
 
-        rsize = _SIZES[self.flow]
-        fsize = _SIZES[1 - self.flow]
+    def _dimsum(self, flow: complex) -> int:
+        dimensions = self._dims(flow)
 
-        rcoord = _COORDS[self.flow]
+        if 0 in dimensions:
+            return 0
 
-        setattr(child, rcoord, getattr(self, rsize))
+        return sum(dimensions)
 
-        setattr(self, rsize, getattr(self, rsize) + getattr(child, rsize))
-        setattr(self, fsize, max(getattr(self, fsize), getattr(child, fsize)))
+    def _dimmax(self, flow: complex) -> int:
+        dimensions = self._dims(flow)
 
-        for _ in range(2):
-            self._expand[_] |= child._expand[_]
+        if not dimensions or 0 in dimensions:
+            return 0
 
-    def resize(self) -> bool:
+        return max(dimensions)
+
+    @property
+    def width(self) -> int:
+        """The box width."""
+        if self.flow == 1:
+            return self._dimsum(1)
+        return self._dimmax(1)
+
+    @property
+    def height(self) -> int:
+        """The box height."""
+        if self.flow == 1j:
+            return self._dimsum(1j)
+        return self._dimmax(1j)
+
+    def resize(self, rect: Rect) -> bool:
         """Resize the box."""
-        refresh = super().resize()
+        refresh = super().resize(rect)
 
-        # fixed
-        fsize = _SIZES[1 - self.flow]
-        fcoord = _COORDS[1 - self.flow]
-        # running
-        rsize = _SIZES[self.flow]
-        rcoord = _COORDS[self.flow]
+        if self.rect == rect:
+            return False
 
-        touched = set()
-
-        def _set_property(obj: Widget, prop: str, value: Any) -> None:
-            old_val = getattr(obj, prop)
-            if old_val != value:
-                setattr(obj, prop, value)
-                touched.add(obj.name)
-
-        # set the fixed size and coordinate straight away
-        for child in self._children:
-            _set_property(child, fsize, getattr(self, fsize))
-            _set_property(child, fcoord, getattr(self, fcoord))
+        self.rect = rect
 
         # compute the height of expanding widgets
         dimensions = [
-            0 if child._expand[self.flow] else getattr(child, rsize)
+            0
+            if child.expand.along(self.flow)
+            else abs(Point(child.width, child.height).along(self.flow))
             for child in self._children
         ]
-        allocated_dim = sum(dimensions)
-        remaining_dim = getattr(self, rsize) - allocated_dim
-        n_variable = sum([1 for child in self._children if child._expand[self.flow]])
+        nvar = sum(_ == 0 for _ in dimensions)
 
-        if n_variable:
-            variable_dimensions = [int(remaining_dim / n_variable)] * n_variable
-            for i in range(remaining_dim % n_variable):
-                variable_dimensions[i] += 1
+        allocated_dim = sum(dimensions)
+        remaining_dim = int(abs(self.size.along(self.flow)) - allocated_dim)
+
+        if nvar:
+            var_dim, res_dim = divmod(remaining_dim, nvar)
+        else:
+            var_dim, res_dim = 0, remaining_dim
 
         # place and resize children
-        pos = getattr(self, rcoord)
-        for child in self._children:
-            _set_property(child, rcoord, pos)
-            if child._expand[self.flow]:
-                _set_property(child, rsize, variable_dimensions.pop(0))
+        perp = Point(self.size.along(1j * self.flow.conjugate()))  # type: ignore[call-overload]
+        pos = self.pos
+        for child, dim in zip(self._children, dimensions):
+            size = perp
+            if not dim:
+                if res_dim:
+                    e = 1
+                    res_dim -= 1
+                else:
+                    e = 0
+                size = Point(size + (var_dim + e) * self.flow)
+            else:
+                size = Point(size + dim * self.flow)
 
-            if child.name in touched:
-                refresh |= child.resize()
+            refresh |= child.resize(Rect(pos, size))
 
-            pos += getattr(child, rsize)
-
-        for name in touched:
-            child = self._children[self._children_map[name]]
-            refresh |= child.draw()
+            pos = Point(pos + size.along(self.flow))
 
         return refresh

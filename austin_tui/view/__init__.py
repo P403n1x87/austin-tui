@@ -37,6 +37,7 @@ from lxml.etree import QName
 
 from austin_tui.view.palette import Palette
 from austin_tui.widgets import Container
+from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
 import austin_tui.widgets.catalog as catalog
 from austin_tui.widgets.markup import AttrString
@@ -196,13 +197,13 @@ class View(ABC):
             raise RuntimeError("View has no root widget")
 
         self.root_widget.show()
+        self._open = True
+
         self.palette.init()
 
-        self.root_widget.resize()
+        self.root_widget.resize(Rect(0, self.root_widget.get_size()))
         self.root_widget.draw()
         self.root_widget.refresh()
-
-        self._open = True
 
         self._create_tasks()
 

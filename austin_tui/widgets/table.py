@@ -20,8 +20,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, List
+from typing import Any, List, Optional
 
+from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
 from austin_tui.widgets.markup import Writable
 
@@ -47,7 +48,7 @@ class Table(Widget):
 
         win.clear()
 
-        h, w = self.height, self.width
+        w, h = self.rect.size.to_tuple
         empty = "< Empty >"
         if h < 1 or w < len(empty):
             return True
@@ -58,7 +59,7 @@ class Table(Widget):
 
     def _draw_row(self, i: int, row: List[Any]) -> None:
         x = 0
-        available = self.width
+        available = self.rect.size.x
         win = self.win.get_win()
         for j in range(self._cols):
             if available <= x:
@@ -79,33 +80,38 @@ class Table(Widget):
         each cell.
         """
         if data != self._data:
-            h, w = self.parent.height, self.parent.width - 1
-            self.height, self.width = h, w
-            self.parent.set_view_size(max(len(data), h), w)  # ???
-
             self._data = data
-            self.parent.draw()
+            self._height = len(data)
+            self.parent.resize(self.parent.rect)
 
-    def resize(self) -> bool:
+    def resize(self, rect: Rect) -> bool:
         """Resize the table."""
+        if self.rect == rect:
+            return False
+
+        self.rect = rect
+
         self.draw()
+
         return True
 
     def draw(self) -> bool:
         """Draw the table."""
         super().draw()
 
+        if not self.win:
+            return False
+
         if not self._data:
-            self.parent.set_view_size(self.parent.height, self.parent.width - 1)
-            self.width, self.height = self.parent.width - 1, self.parent.height
             return self._show_empty()
         else:
-            self.win.get_win().clear()
+            win = self.win.get_win()
+            if not win:
+                return False
+            win.clear()
             i = 0
             for e in self._data:
                 self._draw_row(i, e)
                 i += 1
-            else:
-                return False
 
-            return True
+        return True
