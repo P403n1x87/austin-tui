@@ -126,6 +126,10 @@ class Widget:
         self.pos = rect.pos
         self.size = rect.size
 
+    def __repr__(self) -> str:
+        """Widget textual representation."""
+        return f"{self.__class__.__name__}({self.name})"
+
     def refresh(self) -> None:
         """Refresh the widget.
 
@@ -226,6 +230,11 @@ class Container(BaseContainer):
         """Show the children."""
         for child in self._children:
             child.show()
+
+    def hide(self) -> None:
+        """Hide the container."""
+        for child in self._children:
+            child.hide()
 
     def draw(self) -> bool:
         """Draw the children."""

@@ -20,7 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, List, Optional
+from typing import Any, List
 
 from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
@@ -48,12 +48,12 @@ class Table(Widget):
 
         win.clear()
 
-        w, h = self.rect.size.to_tuple
+        w, h = self.parent.rect.size.to_tuple
         empty = "< Empty >"
         if h < 1 or w < len(empty):
             return True
 
-        win.addstr(h >> 1, (w >> 1) - (len(empty) >> 1), empty)
+        win.addstr(h >> 1, (w >> 1) - (len(empty) >> 1), empty, 0)
 
         return True
 
@@ -109,7 +109,7 @@ class Table(Widget):
             if not win:
                 return False
             win.clear()
-            i = 0
+            i = self.pos.y
             for e in self._data:
                 self._draw_row(i, e)
                 i += 1

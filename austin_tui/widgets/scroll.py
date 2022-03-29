@@ -70,11 +70,26 @@ class ScrollView(Container):
         if self._win is not None:
             return
 
-        self._win = curses.newpad(1, 1)
+        try:
+            self._win = curses.newpad(self.h, self.w)
+        except curses.error:
+            return
+
         self._win.scrollok(True)
         self._win.keypad(True)
         self._win.timeout(0)
         self._win.nodelay(True)
+
+    def hide(self) -> None:
+        """Hide the scroll view."""
+        super().hide()
+
+        if self._win is not None:
+            self._win.clear()
+            self.refresh()
+            del self._win
+            self._win = None
+            self.w = self.h = 1
 
     def get_inner_size(self) -> Point:
         """Get the scroll view inner size.
@@ -171,9 +186,11 @@ class ScrollView(Container):
         width = self.rect.size.x - 1
         self.set_view_size(child.height, width)
 
-        if child.resize(Rect(self.pos, Point(width, child.height))):
+        if child.resize(Rect(0, Point(width, child.height))):
             refresh = self.draw()
             self.refresh()
+
+        self._draw_scroll_bar()
 
         return refresh
 
@@ -186,6 +203,10 @@ class ScrollView(Container):
 
         if self.curr_y + h > self.h:
             self.curr_y = self.h - h
+
+        if self._children:
+            (child,) = self._children
+            child.draw()
 
         self._draw_scroll_bar()
 

@@ -187,6 +187,21 @@ class Label(Widget):
 
         return True
 
+    def hide(self) -> None:
+        """Hide the label."""
+        win = self.win.get_win()
+        if not win:
+            return
+
+        width = self.size.x
+        if not width:
+            return
+
+        try:
+            win.addstr(self.pos.y, self.pos.x, " " * width, 0)
+        except curses.error:
+            pass
+
 
 class Line(Label):
     """A line that spans the width of its container."""

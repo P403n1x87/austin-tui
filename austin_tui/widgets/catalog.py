@@ -27,5 +27,6 @@ from austin_tui.widgets.label import Label
 from austin_tui.widgets.label import Line
 from austin_tui.widgets.label import ToggleLabel
 from austin_tui.widgets.scroll import ScrollView
+from austin_tui.widgets.selector import Selector
 from austin_tui.widgets.table import Table
 from austin_tui.widgets.window import Window
