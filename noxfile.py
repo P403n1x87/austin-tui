@@ -2,7 +2,7 @@ import tempfile
 
 import nox
 
-nox.options.sessions = ["lint", "mypy"]
+nox.options.sessions = ["lint", "mypy", "tests"]
 
 
 # ---- Configuration ----

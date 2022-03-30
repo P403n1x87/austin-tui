@@ -33,6 +33,7 @@ from austin_tui.adapters import CountAdapter
 from austin_tui.adapters import CpuAdapter
 from austin_tui.adapters import CurrentThreadAdapter
 from austin_tui.adapters import DurationAdapter
+from austin_tui.adapters import FlameGraphAdapter
 from austin_tui.adapters import MemoryAdapter
 from austin_tui.adapters import ThreadDataAdapter
 from austin_tui.adapters import ThreadFullDataAdapter
@@ -65,9 +66,11 @@ class AustinTUIController:
     thread_data = ThreadDataAdapter
     thread_full_data = ThreadFullDataAdapter
     command_line = CommandLineAdapter
+    flamegraph = FlameGraphAdapter
 
     def __init__(self) -> None:
         self._full_mode = False
+        self._graph = False
         self._scaler = None
         self._formatter = None
         self._last_timestamp = 0
@@ -93,10 +96,13 @@ class AustinTUIController:
         if not self.model.austin.threads:
             return
 
-        if self._full_mode:
-            self.thread_full_data()  # type: ignore[call-arg]
+        if self._graph:
+            self.flamegraph()  # type: ignore[call-arg]
         else:
-            self.thread_data()  # type: ignore[call-arg]
+            if self._full_mode:
+                self.thread_full_data()  # type: ignore[call-arg]
+            else:
+                self.thread_data()  # type: ignore[call-arg]
 
         self._last_timestamp = self.model.austin.stats.timestamp
 
@@ -113,8 +119,24 @@ class AustinTUIController:
 
         return True
 
+    def _add_flamegraph_palette(self) -> None:
+        colors = [196, 202, 214, 124, 160, 166, 208]
+        palette = self.view.palette
+
+        for i, color in enumerate(colors):
+            palette.add_color(f"fg{i}", 15, color)
+            palette.add_color(f"fgf{i}", color)
+
+        self.view.flamegraph.set_palette(
+            (
+                [palette.get_color(f"fg{i}") for i in range(len(colors))],
+                [palette.get_color(f"fgf{i}") for i in range(len(colors))],
+            )
+        )
+
     def start(self) -> None:
         """Start event."""
+        self._add_flamegraph_palette()
         self.view.open()
         self.view.submit_task(self.update_loop())
 
@@ -153,7 +175,10 @@ class AustinTUIController:
         """The UI update loop."""
         while not self.view._stopped and self.view.is_open and self.view.root_widget:
             if self.update():
-                self.view.table.draw()
+                if self._graph:
+                    self.view.flamegraph.draw()
+                else:
+                    self.view.table.draw()
 
             self.view.root_widget.refresh()
 
@@ -180,21 +205,32 @@ class AustinTUIController:
     async def on_next_thread(self) -> bool:
         """Handle next thread event."""
         if self._change_thread(ThreadNav.NEXT):
-            self.view.table.draw()
-            self.view.stats_view.refresh()
+            if self._graph:
+                self.view.flamegraph.draw()
+                self.view.flame_view.refresh()
+            else:
+                self.view.table.draw()
+                self.view.stats_view.refresh()
             return True
         return False
 
     async def on_previous_thread(self) -> bool:
         """Handle previous thread event."""
         if self._change_thread(ThreadNav.PREV):
-            self.view.table.draw()
-            self.view.stats_view.refresh()
+            if self._graph:
+                self.view.flamegraph.draw()
+                self.view.flame_view.refresh()
+            else:
+                self.view.table.draw()
+                self.view.stats_view.refresh()
             return True
         return False
 
     async def on_full_mode_toggled(self, _: Any = None) -> bool:
         """Toggle full mode."""
+        if self._graph:
+            return False
+
         self._full_mode = not self._full_mode
         self.set_thread_data()
 
@@ -268,4 +304,17 @@ class AustinTUIController:
         """Handle threshold down."""
         th = self._change_threshold(-0.01) * 100.0
         self.view.threshold.set_text(f"{th:.0f}%")
+        return True
+
+    async def on_graph_toggled(self, _: Any = None) -> bool:
+        """Toggle graph visualisation."""
+        self._graph = not self._graph
+
+        self.view.dataview_selector.select(self._graph)
+
+        if self._graph:
+            self.flamegraph()  # type: ignore[call-arg]
+        else:
+            self.set_thread_data()
+
         return True

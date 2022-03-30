@@ -48,13 +48,6 @@ class Table(Widget):
 
         win.clear()
 
-        w, h = self.parent.rect.size.to_tuple
-        empty = "< Empty >"
-        if h < 1 or w < len(empty):
-            return True
-
-        win.addstr(h >> 1, (w >> 1) - (len(empty) >> 1), empty, 0)
-
         return True
 
     def _draw_row(self, i: int, row: List[Any]) -> None:
@@ -73,7 +66,7 @@ class Table(Widget):
                 delta = min(available - x, len(text))
             x += delta
 
-    def set_data(self, data: TableData) -> None:
+    def set_data(self, data: TableData) -> bool:
         """Set the table data.
 
         The format is a list of rows, with each row representing the content of
@@ -83,6 +76,9 @@ class Table(Widget):
             self._data = data
             self._height = len(data)
             self.parent.resize(self.parent.rect)
+            return True
+
+        return False
 
     def resize(self, rect: Rect) -> bool:
         """Resize the table."""

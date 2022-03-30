@@ -175,6 +175,20 @@ profiling data is still being captured and processed in the background, so that
 when the view is resumed, the latest figures are shown.
 
 
+## Graph mode
+
+A live flame graph visualisation of the current thread statistics can be
+displayed by pressing <kbd>G</kbd>. This might help with identifying the largest
+frames at a glance.
+
+<p align="center">
+  <img src="art/austin-tui-flamegraph.gif"
+       style="box-shadow: #111 0px 0px 16px;"
+       alt="Austin TUI - Live flame graph" />
+</p>
+
+To toggle back to the top view, simply press <kbd>G</kbd> again.
+
 ## Save statistics
 
 Peeking at a running Python application is nice but in many cases you would want

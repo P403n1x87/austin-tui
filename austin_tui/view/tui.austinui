@@ -119,40 +119,54 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
         </aui:Box>
       </aui:Box>
 
-      <aui:Box name="table_header" flow="h">
-        <aui:Label name="own"
-          text="OWN"
-          align="center"
-          width="8"
-          bold="true"
-          reverse="true" />
-        <aui:Label name="total"
-          text="TOTAL"
-          align="center"
-          width="8"
-          bold="true"
-          reverse="true" />
-        <aui:Label name="pown"
-          text="%OWN"
-          align="center"
-          width="8"
-          bold="true"
-          reverse="true" />
-        <aui:Label name="ptotal"
-          text="%TOTAL"
-          align="center"
-          width="8"
-          bold="true"
-          reverse="true" />
-        <aui:Label name="function"
-          text=" FUNCTION"
-          bold="true"
-          reverse="true" />
-      </aui:Box>
+      <aui:Selector name="dataview_selector">
+        <aui:Box name="table_viewbox" flow="v">
+          <aui:Box name="table_header" flow="h">
+            <aui:Label name="own"
+              text="OWN"
+              align="center"
+              width="8"
+              bold="true"
+              reverse="true" />
+            <aui:Label name="total"
+              text="TOTAL"
+              align="center"
+              width="8"
+              bold="true"
+              reverse="true" />
+            <aui:Label name="pown"
+              text="%OWN"
+              align="center"
+              width="8"
+              bold="true"
+              reverse="true" />
+            <aui:Label name="ptotal"
+              text="%TOTAL"
+              align="center"
+              width="8"
+              bold="true"
+              reverse="true" />
+            <aui:Label name="function"
+              text=" FUNCTION"
+              bold="true"
+              reverse="true" />
+          </aui:Box>
 
-      <aui:ScrollView name="stats_view">
-        <aui:Table name="table" columns="5" />
-      </aui:ScrollView>
+          <aui:ScrollView name="stats_view">
+            <aui:Table name="table" columns="5" />
+          </aui:ScrollView>
+        </aui:Box>
+
+        <aui:Box name="graph_viewbox" flow="v">
+          <aui:Label name="graph_header"
+            text="FLAME GRAPH"
+            bold="true"
+            reverse="true" />
+          <aui:ScrollView name="flame_view">
+            <aui:FlameGraph name="flamegraph" />
+          </aui:ScrollView>
+        </aui:Box>
+      </aui:Selector>
 
       <aui:CommandBar name="command_bar">
         <aui:Label name="quit_cmd"
@@ -171,8 +185,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           width="3"
           color="cmd_off" />
         <aui:Label name="prev_thread_label"
-          text="PrevThread"
-          width="12"
+          text="PrvThrd"
+          width="9"
           align="center" />
 
         <aui:Label name="next_thread_cmd"
@@ -181,8 +195,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           width="3"
           color="cmd_off" />
         <aui:Label name="next_thread_label"
-          text="NextThread"
-          width="12"
+          text="NxtThrd"
+          width="9"
           align="center" />
 
         <aui:ToggleLabel name="full_mode_cmd"
@@ -194,6 +208,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           state="0" />
         <aui:Label name="full_mode_label"
           text="Full"
+          width="6"
+          align="center" />
+
+        <aui:ToggleLabel name="graph_cmd"
+          text="G"
+          align="center"
+          width="3"
+          on="cmd_on"
+          off="cmd_off"
+          state="0" />
+        <aui:Label name="graph_label"
+          text="Grph"
           width="6"
           align="center" />
 
@@ -241,6 +267,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 
   <aui:signal key="q" handler="on_quit"              />
   <aui:signal key="f" handler="on_full_mode_toggled" />
+  <aui:signal key="g" handler="on_graph_toggled"     />
   <aui:signal key="s" handler="on_save"              />
   <aui:signal key="p" handler="on_play_pause"        />
 

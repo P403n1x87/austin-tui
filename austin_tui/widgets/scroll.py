@@ -89,7 +89,6 @@ class ScrollView(Container):
             self.refresh()
             del self._win
             self._win = None
-            self.w = self.h = 1
 
     def get_inner_size(self) -> Point:
         """Get the scroll view inner size.

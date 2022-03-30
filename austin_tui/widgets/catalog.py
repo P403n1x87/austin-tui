@@ -22,6 +22,7 @@
 
 from austin_tui.widgets.box import Box
 from austin_tui.widgets.command_bar import CommandBar
+from austin_tui.widgets.graph import FlameGraph
 from austin_tui.widgets.label import BarPlot
 from austin_tui.widgets.label import Label
 from austin_tui.widgets.label import Line

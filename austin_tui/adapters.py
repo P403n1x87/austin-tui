@@ -32,6 +32,7 @@ from austin_tui.model.system import FrozenSystemModel
 from austin_tui.model.system import Percentage
 from austin_tui.model.system import SystemModel
 from austin_tui.view import View
+from austin_tui.widgets.graph import FlameGraphData
 from austin_tui.widgets.markup import AttrString
 from austin_tui.widgets.table import TableData
 
@@ -379,3 +380,48 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
             _add_frame_stats(children[-1], "└─ ", "   ", 0, thread_stats.children)
 
         return frame_stats
+
+
+class FlameGraphAdapter(Adapter):
+    """Flame graph data adapter."""
+
+    def transform(self) -> dict:
+        """Transform according to the right model."""
+        austin = self._model.frozen_austin if self._model.frozen else self._model.austin
+        system = self._model.frozen_system if self._model.frozen else self._model.system
+        return self._transform(austin, system)  # type: ignore[arg-type]
+
+    def _transform(
+        self, austin: AustinModel, system: Union[SystemModel, FrozenSystemModel]
+    ) -> dict:
+        thread_key = austin.threads[austin.current_thread]
+        pid, _, thread = thread_key.partition(":")
+
+        thread = austin.stats.processes[int(pid)].threads[thread]
+
+        cs = {}  # type: ignore[var-annotated]
+        total = thread.total.value
+        total_pct = min(int(total / system.duration / 1e4), 100)
+        data: FlameGraphData = {
+            f"THREAD {thread.label} ⏲️  {fmt_time(total)} ({total_pct}%)": (total, cs)
+        }
+        levels = [(c, cs) for c in thread.children.values()]
+        while levels:
+            level, c = levels.pop(0)
+            k = f"{level.label.function} ({level.label.filename})"
+            if k in c:
+                v, cs = c[k]
+                c[k] = (v + level.total.value, cs)
+            else:
+                cs = {}
+                c[k] = (level.total.value, cs)
+            levels.extend(((c, cs) for c in level.children.values()))
+
+        return data
+
+    def update(self, data: FlameGraphData) -> bool:
+        """Update the table."""
+        (header,) = data
+        return self._view.flamegraph.set_data(data) | self._view.graph_header.set_text(
+            " FLAME GRAPH FOR " + header
+        )

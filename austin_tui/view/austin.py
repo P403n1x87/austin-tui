@@ -72,7 +72,21 @@ class AustinView(View):
 
     async def on_full_mode_toggled(self) -> bool:
         """Handle Full Mode toggle."""
+        if self.graph_cmd.state:
+            return False
+
         self.full_mode_cmd.toggle()
+        return True
+
+    async def on_graph_toggled(self) -> bool:
+        """Handle graph visualisation toggling."""
+        self.graph_cmd.toggle()
+        self.dataview_selector.refresh()
+        if self.graph_cmd.state:
+            self.full_mode_cmd.set_color("disabled")
+        else:
+            self.full_mode_cmd.toggle()
+            self.full_mode_cmd.toggle()
         return True
 
     async def on_save(self, data: Any = None) -> bool:
@@ -82,38 +96,52 @@ class AustinView(View):
 
     async def on_table_up(self, data: Any = None) -> bool:
         """Handle Up Arrow on the table widget."""
-        self.stats_view.scroll_up()
-        self.stats_view.refresh()
+        view = self.flame_view if self.graph_cmd.state else self.stats_view
+
+        view.scroll_up()
+        view.refresh()
         return False
 
     async def on_table_down(self, data: Any = None) -> bool:
         """Handle Down Arrow on the table widget."""
-        self.stats_view.scroll_down()
-        self.stats_view.refresh()
+        view = self.flame_view if self.graph_cmd.state else self.stats_view
+
+        view.scroll_down()
+        view.refresh()
         return False
 
     async def on_table_pgup(self, data: Any = None) -> bool:
         """Handle Page Up on the table widget."""
-        self.stats_view.scroll_page_up()
-        self.stats_view.refresh()
+        view = self.flame_view if self.graph_cmd.state else self.stats_view
+
+        view.scroll_page_up()
+        view.refresh()
         return False
 
     async def on_table_pgdown(self, data: Any = None) -> bool:
         """Handle Page Down on the table widget."""
-        self.stats_view.scroll_page_down()
-        self.stats_view.refresh()
+        view = self.flame_view if self.graph_cmd.state else self.stats_view
+
+        view.scroll_page_down()
+        view.refresh()
         return False
 
     async def on_table_home(self, _: Any = None) -> bool:
         """Handle Home key on the table widget."""
-        self.stats_view.top()
-        self.stats_view.refresh()
+        view = self.flame_view if self.graph_cmd.state else self.stats_view
+
+        view.top()
+        view.refresh()
+
         return False
 
     async def on_table_end(self, _: Any = None) -> bool:
         """Handle End key on the table widget."""
-        self.stats_view.bottom()
-        self.stats_view.refresh()
+        view = self.flame_view if self.graph_cmd.state else self.stats_view
+
+        view.bottom()
+        view.refresh()
+
         return False
 
     async def on_play_pause(self, _: Any = None) -> bool:

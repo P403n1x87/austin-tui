@@ -19,3 +19,9 @@ def test_austin_view():
     assert view.info_box.rect == Rect(0, 80 + 4j)
 
     assert view.dataview_selector.rect == Rect(4j, 80 + 27j)
+
+    view.dataview_selector.select(1)
+    root.resize(Rect(0, root.get_size()))
+
+    assert view.dataview_selector.rect == Rect(4j, 80 + 27j)
+    assert view.flame_view.rect == Rect(5j, 80 + 26j)
