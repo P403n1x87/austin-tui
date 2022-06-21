@@ -25,16 +25,12 @@ from abc import abstractmethod
 import curses
 from dataclasses import dataclass
 from typing import Any, List, TYPE_CHECKING
+from xml.sax.saxutils import escape
 
 from lxml import etree
 
 if TYPE_CHECKING:
     from austin_tui.view.palette import Palette
-
-
-def escape(text: str) -> str:
-    """Escape angle brackets."""
-    return text.replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _unescape(text: str) -> str:

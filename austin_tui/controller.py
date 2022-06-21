@@ -40,6 +40,7 @@ from austin_tui.adapters import ThreadFullDataAdapter
 from austin_tui.adapters import ThreadNameAdapter
 from austin_tui.model import Model
 from austin_tui.view import ViewBuilder
+from austin_tui.widgets.markup import escape
 
 
 class ThreadNav(Enum):
@@ -258,7 +259,9 @@ class AustinTUIController:
                         if not line.startswith("# "):
                             fout.write(line + "\n")
                 self.view.notification.set_text(
-                    self.view.markup(f"Stats saved as <running>{filename}</running> 📝 ")
+                    self.view.markup(
+                        f"Stats saved as <running>{escape(filename)}</running> 📝 "
+                    )
                 )
             except IOError as e:
                 self.view.notification.set_text(f"Failed to save stats: {e}")

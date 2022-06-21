@@ -53,7 +53,7 @@ austin-tui = "austin_tui.__main__:main"
 [tool.poetry.dependencies]
 austin-python = {version = "^1.1.0*", allow-prereleases = true}
 importlib-resources = "^2.0.1"
-lxml = "^4.5.1"
+lxml = "^4.8.0"
 python = "^3.7"
 windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
 

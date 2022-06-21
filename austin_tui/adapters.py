@@ -34,12 +34,8 @@ from austin_tui.model.system import SystemModel
 from austin_tui.view import View
 from austin_tui.widgets.graph import FlameGraphData
 from austin_tui.widgets.markup import AttrString
+from austin_tui.widgets.markup import escape
 from austin_tui.widgets.table import TableData
-
-
-def escape(text: str) -> str:
-    """Escape angle brackets."""
-    return text.replace("<", "&lt;").replace(">", "&gt;")
 
 
 class Adapter:
@@ -116,7 +112,7 @@ class CommandLineAdapter(FreezableAdapter):
         """Retrieve the command line."""
         cmd = self._model.austin.command_line
         exec, _, args = cmd.partition(" ")
-        return self._view.markup(f"<exec><b>{exec}</b></exec> {args}")
+        return self._view.markup(f"<exec><b>{escape(exec)}</b></exec> {escape(args)}")
 
     def update(self, data: AttrString) -> bool:
         """Update the widget."""
