@@ -260,7 +260,7 @@ class AustinTUIController:
                             fout.write(line + "\n")
                 self.view.notification.set_text(
                     self.view.markup(
-                        f"Stats saved as <running>{escape(filename)}</running> 📝 "
+                        f"Stats saved as <running>{escape(filename)}</running> "
                     )
                 )
             except IOError as e:
