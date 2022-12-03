@@ -21,57 +21,98 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-[tool.poetry]
-authors = ["Gabriele N. Tornetta <phoenix1987@gmail.com>"]
+[project]
+authors = [
+  {name = "Gabriele N. Tornetta", email = "phoenix1987@gmail.com"},
+]
+description = "The top-like text-based user interface for Austin"
+license = "GPL-3.0-or-later"
+name = "austin-tui"
+readme = "README.md"
+
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
   "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
 ]
-description = "The top-like text-based user interface for Austin"
+keywords = ["performance", "profiling", "testing", "development"]
+
+dependencies = [
+  "austin-python~=1.1",
+  "importlib_resources~=5.10",
+  "lxml~=4.8",
+  "windows-curses~=2.1; sys_platform == 'win32'",
+]
+requires-python = ">=3.7"
+
+dynamic = ["version"]
+
+[project.urls]
 documentation = "https://austin-tui.readthedocs.io"
 homepage = "https://github.com/P403n1x87/austin-tui"
-keywords = ["performance", "profiling", "testing", "development"]
-license = "GPL-3.0-or-later"
-name = "austin-tui"
-packages = [
-  {include = "austin_tui"},
-]
-readme = "README.md"
+issues = "https://github.com/P403n1x87/austin-tui/issues"
 repository = "https://github.com/P403n1x87/austin-tui"
-version = "0.0.0"
 
-[tool.isort]
-profile = "google"
-
-[tool.poetry.scripts]
+[project.scripts]
 austin-tui = "austin_tui.__main__:main"
 
-[tool.poetry.dependencies]
-austin-python = {version = "^1.1.0*", allow-prereleases = true}
-importlib-resources = "^2.0.1"
-lxml = "^4.8.0"
-python = "^3.7"
-windows-curses = {version = "^2.1.0", markers = "sys_platform == 'win32'"}
+[tool.hatch.envs.tests]
+dependencies = [
+  "pytest>=5.4.2",
+  "pytest-cov>=2.8.1",
+]
+template = "tests"
+[tool.hatch.envs.tests.scripts]
+tests = "pytest --cov=austin --cov-report=term-missing --cov-report=xml {args}"
 
-[tool.poetry.dev-dependencies]
-codecov = "^2.1.3"
-coverage = {extras = ["toml"], version = "*"}
-mypy = "^0.910"
-nox = "^2020.5.24"
-pytest = ">=5.4.2"
-pytest-cov = ">=2.8.1"
-sphinx = "^3.0.4"
-sphinx-autodoc-typehints = "^1.10.3"
+[[tool.hatch.envs.tests.matrix]]
+python = ["3.7", "3.8", "3.9", "3.10", "3.11"]
 
-[tool.poetry.urls]
-issues = "https://github.com/P403n1x87/austin-tui/issues"
+[tool.hatch.envs.checks]
+dependencies = [
+  "mypy~=0.770",
+  "flake8~=5.0.4",
+  "flake8-annotations~=2.9.1",
+  "flake8-black",
+  "flake8-bugbear~=22.9.23",
+  "flake8-docstrings~=1.6.0",
+  "flake8-import-order~=0.18.1",
+  "flake8-isort~=5.0.0",
+]
+python = "3.10"
+template = "checks"
 
-[tool.poetry-dynamic-versioning]
-enable = true
+[tool.hatch.envs.checks.scripts]
+linting = "flake8 {args} austin_tui/ test/ "
+typing = "mypy --show-error-codes --install-types --non-interactive {args} austin_tui/ tests/"
+
+[tool.hatch.envs.coverage]
+dependencies = [
+  "coverage[toml]",
+  "codecov",
+]
+python = "3.10"
+template = "coverage"
+
+[tool.hatch.envs.coverage.scripts]
+cov = "coverage xml --fail-under=0"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github",
+  "/docs",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["austin_tui"]
 
 [tool.coverage.run]
 branch = true
@@ -80,6 +121,19 @@ source = ["austin_tui"]
 [tool.coverage.report]
 show_missing = true
 
+[tool.isort]
+force_single_line = true
+lines_after_imports = 2
+profile = "black"
+
+[tool.mypy]
+exclude = []
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = []
+
 [build-system]
-build-backend = "poetry.masonry.api"
-requires = ["poetry>=0.12"]
+build-backend = "hatchling.build"
+requires = ["hatchling", "hatch-vcs"]

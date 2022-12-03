@@ -22,7 +22,8 @@
 
 
 import curses
-from typing import Dict, Tuple
+from typing import Dict
+from typing import Tuple
 
 
 class PaletteError(Exception):

@@ -20,14 +20,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import curses
 from abc import ABC
 from abc import abstractmethod
-import curses
 from dataclasses import dataclass
-from typing import Any, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import List
 from xml.sax.saxutils import escape
 
 from lxml import etree
+
 
 if TYPE_CHECKING:
     from austin_tui.view.palette import Palette

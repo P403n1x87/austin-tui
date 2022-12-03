@@ -20,28 +20,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from abc import ABC
 import asyncio
-from asyncio.coroutines import iscoroutine
-from collections import defaultdict
 import curses
 import sys
-from typing import Any, Callable, Coroutine, Dict, List, Optional, TextIO, Type, Union
+from abc import ABC
+from asyncio.coroutines import iscoroutine
+from collections import defaultdict
+from typing import Any
+from typing import Callable
+from typing import Coroutine
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import TextIO
+from typing import Type
+from typing import Union
 
 from importlib_resources import files
-from lxml.etree import _Comment as Comment
 from lxml.etree import Element
+from lxml.etree import QName
+from lxml.etree import _Comment as Comment
 from lxml.etree import fromstring as parse_xml_string
 from lxml.etree import parse as parse_xml_stream
-from lxml.etree import QName
 
+import austin_tui.widgets.catalog as catalog
 from austin_tui.view.palette import Palette
 from austin_tui.widgets import Container
 from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
-import austin_tui.widgets.catalog as catalog
 from austin_tui.widgets.markup import AttrString
 from austin_tui.widgets.markup import markup
+
 
 EventHandler = Callable[[Optional[Any]], bool]
 
