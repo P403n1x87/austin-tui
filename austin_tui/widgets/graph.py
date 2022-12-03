@@ -22,10 +22,14 @@
 
 import curses
 from random import randrange
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
+
 
 FlameGraphData = Dict[str, Tuple[float, "FlameGraphData"]]  # type: ignore[misc]
 

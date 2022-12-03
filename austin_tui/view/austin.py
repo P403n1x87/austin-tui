@@ -22,13 +22,16 @@
 
 import asyncio
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
+from typing import Callable
+from typing import Optional
 
 from austin_tui import AustinProfileMode
 from austin_tui.adapters import fmt_time as _fmt_time
 from austin_tui.view import View
 from austin_tui.widgets.markup import AttrString
 from austin_tui.widgets.markup import AttrStringChunk
+
 
 # ---- AustinView -------------------------------------------------------------
 

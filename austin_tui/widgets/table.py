@@ -20,11 +20,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, List
+from typing import Any
+from typing import List
 
 from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
 from austin_tui.widgets.markup import Writable
+
 
 TableData = List[List[Any]]
 

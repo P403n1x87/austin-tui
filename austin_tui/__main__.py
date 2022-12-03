@@ -23,7 +23,9 @@
 import asyncio
 import sys
 from textwrap import wrap
-from typing import Any, List, Optional
+from typing import Any
+from typing import List
+from typing import Optional
 
 from austin import AustinError
 from austin.aio import AsyncAustin

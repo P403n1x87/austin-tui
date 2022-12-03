@@ -25,6 +25,7 @@ import time
 from psutil import NoSuchProcess
 from psutil import Process
 
+
 Seconds = float
 Percentage = float
 Bytes = int
