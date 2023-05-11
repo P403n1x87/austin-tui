@@ -149,7 +149,7 @@ class View(ABC):
                     event = self.root_widget._win.getkey()
                     if event in self._event_handlers:
                         done, pending = await asyncio.wait(
-                            [asyncio.ensure_future(_())
+                            [asyncio.create_task(_())
                                 for _ in self._event_handlers[event]]
                         )
                         assert not pending
