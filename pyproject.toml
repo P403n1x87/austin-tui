@@ -22,9 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 [project]
-authors = [
-  {name = "Gabriele N. Tornetta", email = "phoenix1987@gmail.com"},
-]
+authors = [{ name = "Gabriele N. Tornetta", email = "phoenix1987@gmail.com" }]
 description = "The top-like text-based user interface for Austin"
 license = "GPL-3.0-or-later"
 name = "austin-tui"
@@ -34,21 +32,21 @@ classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 keywords = ["performance", "profiling", "testing", "development"]
 
 dependencies = [
   "austin-python~=1.1",
   "importlib_resources~=5.10",
-  "lxml~=4.8",
+  "lxml~=5.0",
   "windows-curses~=2.1; sys_platform == 'win32'",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 
 dynamic = ["version"]
 
@@ -62,20 +60,17 @@ repository = "https://github.com/P403n1x87/austin-tui"
 austin-tui = "austin_tui.__main__:main"
 
 [tool.hatch.envs.tests]
-dependencies = [
-  "pytest>=5.4.2",
-  "pytest-cov>=2.8.1",
-]
+dependencies = ["pytest>=5.4.2", "pytest-cov>=2.8.1"]
 template = "tests"
 [tool.hatch.envs.tests.scripts]
 tests = "pytest --cov=austin --cov-report=term-missing --cov-report=xml {args}"
 
 [[tool.hatch.envs.tests.matrix]]
-python = ["3.7", "3.8", "3.9", "3.10", "3.11"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 [tool.hatch.envs.checks]
 dependencies = [
-  "mypy~=0.770",
+  "mypy~=1.0",
   "flake8~=5.0.4",
   "flake8-annotations~=2.9.1",
   "flake8-black",
@@ -84,7 +79,7 @@ dependencies = [
   "flake8-import-order~=0.18.1",
   "flake8-isort~=5.0.0",
 ]
-python = "3.10"
+python = "3.12"
 template = "checks"
 
 [tool.hatch.envs.checks.scripts]
@@ -92,11 +87,8 @@ linting = "flake8 {args} austin_tui/ test/ "
 typing = "mypy --show-error-codes --install-types --non-interactive {args} austin_tui/ tests/"
 
 [tool.hatch.envs.coverage]
-dependencies = [
-  "coverage[toml]",
-  "codecov",
-]
-python = "3.10"
+dependencies = ["coverage[toml]", "codecov"]
+python = "3.12"
 template = "coverage"
 
 [tool.hatch.envs.coverage.scripts]
@@ -106,10 +98,7 @@ cov = "coverage xml --fail-under=0"
 source = "vcs"
 
 [tool.hatch.build.targets.sdist]
-exclude = [
-  "/.github",
-  "/docs",
-]
+exclude = ["/.github", "/docs"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["austin_tui"]
