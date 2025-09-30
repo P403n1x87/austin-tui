@@ -24,6 +24,7 @@ import asyncio
 from enum import Enum
 from typing import Any
 from typing import Callable
+from typing import List
 from typing import Optional
 
 from austin_tui import AustinProfileMode
@@ -245,4 +246,4 @@ class AustinView(View):
 
     def set_python(self, version: str) -> None:
         """Set the Python version."""
-        self.python.set_text(".".join([str(_) for _ in version]))
+        self.python.set_text(version)

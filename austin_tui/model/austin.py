@@ -28,11 +28,9 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from austin.events import AustinSample
 from austin.stats import AustinStats
 from austin.stats import AustinStatsType
-from austin.stats import InvalidSample
-from austin.stats import MetricType
-from austin.stats import Sample
 
 from austin_tui import AustinProfileMode
 
@@ -86,7 +84,7 @@ class AustinModel:
 
         self._samples = 0
         self._invalids = 0
-        self._last_stack: Dict[str, Sample] = {}
+        self._last_stack: Dict[str, AustinSample] = {}
         self._stats = AustinStats(
             AustinStatsType.MEMORY
             if self.mode is AustinProfileMode.MEMORY
@@ -121,28 +119,20 @@ class AustinModel:
         """Set the Austin metadata."""
         self.metadata = metadata
 
-    def update(self, raw_sample: str) -> None:
+    def update(self, sample: AustinSample) -> None:
         """Update current statistics with a new sample."""
         try:
-            (sample,) = Sample.parse(
-                raw_sample,
-                MetricType.MEMORY
-                if self.mode is AustinProfileMode.MEMORY
-                else MetricType.TIME,
-            )
-            if sample.metric.value < 0:
+            if sample.metrics.time < 0:
                 return
             self._stats.update(sample)
             self._stats.timestamp = time()
             thread_key = f"{sample.pid}:{sample.thread}"
             self._last_stack[thread_key] = sample
             self._threads.add(thread_key)
-        except InvalidSample:
-            self._invalids += 1
         finally:
             self._samples += 1
 
-    def get_last_stack(self, thread_key: str) -> Sample:
+    def get_last_stack(self, thread_key: str) -> AustinSample:
         """Get the last seen stack for the given thread."""
         return self._last_stack[thread_key]
 

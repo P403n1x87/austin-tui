@@ -101,8 +101,6 @@ class View(ABC):
     """
 
     def __init__(self, name: str) -> None:
-        self._tasks: List[asyncio.Task] = []
-
         self._event_handlers: Dict[str, List[EventHandler]] = defaultdict(list)
 
         self._open = False
@@ -111,19 +109,7 @@ class View(ABC):
         self.palette = Palette()
         self.root_widget = None
 
-    def _create_tasks(self) -> None:
-        loop = asyncio.get_event_loop()
-        event_handlers = set(_ for hs in self._event_handlers.values() for _ in hs)
-        self._tasks = [
-            loop.create_task(coro())
-            for coro in (
-                attr
-                for attr in (getattr(self, name) for name in dir(self))
-                if callable(attr)
-                and asyncio.iscoroutinefunction(attr)
-                and attr not in event_handlers
-            )
-        ]
+        self._input_task = None
 
     def on_exception(self, exc: Exception) -> None:
         """Default task exception callback.
@@ -139,7 +125,10 @@ class View(ABC):
                 raise RuntimeError("Missing root widget")
 
             while self._open:
-                await asyncio.sleep(0.015)
+                try:
+                    await asyncio.sleep(0.015)
+                except asyncio.CancelledError:
+                    break
 
                 if not self.root_widget._win:
                     continue
@@ -148,30 +137,13 @@ class View(ABC):
                 try:
                     event = self.root_widget._win.getkey()
                     if event in self._event_handlers:
-                        done, pending = await asyncio.wait(
-                            [
-                                asyncio.create_task(_())
-                                for _ in self._event_handlers[event]
-                            ]
+                        done = await asyncio.gather(
+                            *(_() for _ in self._event_handlers[event])
                         )
-                        assert not pending
-                        if any(_.result() for _ in done):
+                        if any(done):
                             self.root_widget.refresh()
                 except (KeyError, curses.error):
                     pass
-
-                # Retrieve the result of finished tasks
-                finished_tasks = []
-                running_tasks = []
-                for task in self._tasks:
-                    if task.done():
-                        finished_tasks.append(task)
-                    else:
-                        running_tasks.append(task)
-                self._tasks = running_tasks
-
-                for task in finished_tasks:
-                    task.result()
         except Exception as exc:
             self.on_exception(exc)
 
@@ -217,38 +189,14 @@ class View(ABC):
         self.root_widget.draw()
         self.root_widget.refresh()
 
-        self._create_tasks()
-
-    def submit_task(
-        self,
-        task: Union[
-            asyncio.Task,
-            Coroutine[None, None, None],
-            Callable[[], Any],
-        ],
-    ) -> None:
-        """Submit a task to run concurrently in the event loop.
-
-        A task can be an :class:`asyncio.Task` object, a coroutine or a plain
-        callable object. Any exception thrown within the task can be retrieved
-        from the ``on_exception`` callback.
-        """
-        if isinstance(task, asyncio.Task):
-            self._tasks.append(task)
-        elif iscoroutine(task):
-            self._tasks.append(asyncio.create_task(task))  # type: ignore[arg-type]
-        else:
-            self._tasks.append(asyncio.get_event_loop().run_in_executor(None, task))  # type: ignore[arg-type]
+        self._input_task = asyncio.create_task(self._input_loop())
 
     def close(self) -> None:
         """Close the view."""
         if self._open and self.root_widget:
             self.root_widget.hide()
 
-        for task in self._tasks:
-            task.cancel()
-            if task.done():
-                task.result()
+        self._input_task.cancel()
 
         self._open = False
 

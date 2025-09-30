@@ -41,9 +41,10 @@ classifiers = [
 keywords = ["performance", "profiling", "testing", "development"]
 
 dependencies = [
-  "austin-python~=1.1",
+  "austin-python~=2.0",
   "importlib_resources~=5.10",
   "lxml~=5.0",
+  "psutil",
   "windows-curses~=2.1; sys_platform == 'win32'",
 ]
 requires-python = ">=3.9"

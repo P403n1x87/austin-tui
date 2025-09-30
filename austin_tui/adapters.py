@@ -24,7 +24,7 @@ from typing import Any
 from typing import Optional
 from typing import Union
 
-from austin.stats import ThreadStats
+from austin.stats import HierarchicalStats
 
 from austin_tui import AustinProfileMode
 from austin_tui.model import Model
@@ -113,8 +113,10 @@ class CommandLineAdapter(FreezableAdapter):
     def transform(self) -> AttrString:
         """Retrieve the command line."""
         cmd = self._model.austin.command_line
-        exec, _, args = cmd.partition(" ")
-        return self._view.markup(f"<exec><b>{escape(exec)}</b></exec> {escape(args)}")
+        exec, *args = cmd
+        return self._view.markup(
+            f"<exec><b>{escape(exec)}</b></exec> {escape(' '.join(args))}"
+        )
 
     def update(self, data: AttrString) -> bool:
         """Update the widget."""
@@ -156,7 +158,7 @@ class MemoryAdapter(Adapter):
 
     def update(self, data: Bytes) -> bool:
         """Update metric and plot."""
-        self._view.mem.set_text(f"{data>>20}M ")
+        self._view.mem.set_text(f"{data >> 20}M ")
         self._view.mem_plot.push(data)
         return True
 
@@ -256,30 +258,38 @@ class ThreadDataAdapter(BaseThreadDataAdapter):
             if self._view.mode == AustinProfileMode.MEMORY
             else system.duration
         )
-        for frame in frames:
+
+        for frame in frames or []:
             child_frame_stats = container[frame]
-            if (
-                child_frame_stats.total.value / 1e6 / max_scale
-                < self._model.austin.threshold
-            ):
+            if child_frame_stats.total / 1e6 / max_scale < self._model.austin.threshold:
                 break
+            column = (
+                f":<lineno>{child_frame_stats.label.column}</lineno>"
+                if child_frame_stats.label.column
+                else ""
+            )
+            location = self._view.markup(
+                " "
+                + escape(child_frame_stats.label.function)
+                + f" <inactive>(<filename>{escape(child_frame_stats.label.filename)}</filename>"
+                f":<lineno>{child_frame_stats.label.line}</lineno>{column})</inactive>"
+            )
             frame_stats.append(
                 [
-                    formatter(child_frame_stats.own.value),
-                    formatter(child_frame_stats.total.value),
-                    scaler(child_frame_stats.own.value, max_scale),
-                    scaler(child_frame_stats.total.value, max_scale),
-                    self._view.markup(
-                        " "
-                        + escape(child_frame_stats.label.function)
-                        + f" <inactive>({escape(child_frame_stats.label.filename)}"
-                        f":{child_frame_stats.label.line})</inactive>"
-                    ),
+                    formatter(child_frame_stats.own),
+                    formatter(child_frame_stats.total),
+                    scaler(child_frame_stats.own, max_scale),
+                    scaler(child_frame_stats.total, max_scale),
+                    location,
                 ]
             )
             container = child_frame_stats.children
 
         return frame_stats
+
+
+MAX_DEPTH = 64
+MAX_LENGTH = 1 << 12
 
 
 class ThreadFullDataAdapter(BaseThreadDataAdapter):
@@ -297,7 +307,7 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
         thread_key = austin.threads[austin.current_thread]
         pid, _, thread = thread_key.partition(":")
 
-        frames = austin.get_last_stack(thread_key).frames
+        frames = austin.get_last_stack(thread_key).frames or []
         frame_stats = []
         max_scale = (
             system.max_memory
@@ -306,14 +316,29 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
         )
 
         def _add_frame_stats(
-            stats: ThreadStats,
+            stats: HierarchicalStats,
             marker: str,
             prefix: str,
             level: int = 0,
             active_bucket: Optional[dict] = None,
             active_parent: bool = True,
         ) -> None:
-            if stats.total.value / 1e6 / max_scale < self._model.austin.threshold:
+            if len(frame_stats) == MAX_LENGTH:
+                frame_stats.append(
+                    [
+                        " " * 8,
+                        " " * 8,
+                        " " * 8,
+                        " " * 8,
+                        self._view.markup(
+                            " <inactive>[truncated view; export the data to MOJO to see more with other tools]</inactive>"
+                        ),
+                    ]
+                )
+                return
+            if len(frame_stats) > MAX_LENGTH:
+                return
+            if stats.total / 1e6 / max_scale < self._model.austin.threshold:
                 return
             try:
                 active = (
@@ -327,28 +352,38 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
                 active = False
                 active_bucket = None
 
+            column = (
+                f":<lineno>{stats.label.column}</lineno>" if stats.label.column else ""
+            )
+            location = (
+                (
+                    (
+                        escape(stats.label.function)
+                        if active
+                        else f"<inactive>{escape(stats.label.function)}</inactive>"
+                    )
+                    + f" <inactive>(<filename>{escape(stats.label.filename)}</filename>:<lineno>{stats.label.line}</lineno>{column})</inactive>"
+                )
+                if level < MAX_DEPTH
+                else "<inactive>...</inactive>"
+            )
             frame_stats.append(
                 [
-                    formatter(stats.own.value, active),
-                    formatter(stats.total.value, active),
-                    scaler(stats.own.value, max_scale, active),
-                    scaler(stats.total.value, max_scale, active),
-                    self._view.markup(
-                        " "
-                        + f"<inactive>{marker}</inactive>"
-                        + (
-                            escape(stats.label.function)
-                            if active
-                            else f"<inactive>{escape(stats.label.function)}</inactive>"
-                        )
-                        + f" <inactive>(<filename>{escape(stats.label.filename)}</filename>"
-                        f":<lineno>{stats.label.line}</lineno>)</inactive>"
-                    ),
+                    formatter(stats.own, active),
+                    formatter(stats.total, active),
+                    scaler(stats.own, max_scale, active),
+                    scaler(stats.total, max_scale, active),
+                    self._view.markup(f" <inactive>{marker}</inactive>{location}"),
                 ]
             )
-            children_stats = [child_stats for _, child_stats in stats.children.items()]
-            if not children_stats:
+
+            if level >= MAX_DEPTH or not (
+                children_stats := [
+                    child_stats for _, child_stats in stats.children.items()
+                ]
+            ):
                 return
+
             for child_stats in children_stats[:-1]:
                 _add_frame_stats(
                     child_stats,
@@ -369,9 +404,7 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
             )
 
         thread_stats = austin.stats.processes[int(pid)].threads[thread]
-
-        children = [stats for _, stats in thread_stats.children.items()]
-        if children:
+        if children := list(thread_stats.children.values()):
             for stats in children[:-1]:
                 _add_frame_stats(stats, "├─ ", "│  ", 0, thread_stats.children)
 
@@ -391,14 +424,14 @@ class FlameGraphAdapter(Adapter):
 
     def _transform(
         self, austin: AustinModel, system: Union[SystemModel, FrozenSystemModel]
-    ) -> dict:
+    ) -> FlameGraphData:
         thread_key = austin.threads[austin.current_thread]
         pid, _, thread = thread_key.partition(":")
 
         thread = austin.stats.processes[int(pid)].threads[thread]
 
         cs = {}  # type: ignore[var-annotated]
-        total = thread.total.value
+        total = thread.total
         total_pct = min(int(total / system.duration / 1e4), 100)
         data: FlameGraphData = {
             f"THREAD {thread.label} ⏲️  {fmt_time(total)} ({total_pct}%)": (total, cs)
@@ -409,10 +442,10 @@ class FlameGraphAdapter(Adapter):
             k = f"{level.label.function} ({level.label.filename})"
             if k in c:
                 v, cs = c[k]
-                c[k] = (v + level.total.value, cs)
+                c[k] = (v + level.total, cs)
             else:
                 cs = {}
-                c[k] = (level.total.value, cs)
+                c[k] = (level.total, cs)
             levels.extend(((c, cs) for c in level.children.values()))
 
         return data

@@ -24,13 +24,14 @@ import asyncio
 import sys
 from textwrap import wrap
 from typing import Any
-from typing import List
 from typing import Optional
 
-from austin import AustinError
 from austin.aio import AsyncAustin
 from austin.cli import AustinArgumentParser
 from austin.cli import AustinCommandLineError
+from austin.errors import AustinError
+from austin.events import AustinMetadata
+from austin.events import AustinSample
 from psutil import Process
 
 from austin_tui import AustinProfileMode
@@ -47,9 +48,7 @@ class AustinTUIArgumentParser(AustinArgumentParser):
     """Austin TUI implementation of the Austin argument parser."""
 
     def __init__(self) -> None:
-        super().__init__(
-            name="austin-tui", full=False, alt_format=False, exposure=False
-        )
+        super().__init__(name="austin-tui", full=False)
 
     def parse_args(self) -> Any:
         """Parse command line arguments and report any errors."""
@@ -68,41 +67,34 @@ class AustinTUI(AsyncAustin):
     def __init__(self) -> None:
         super().__init__()
 
-        self._args = AustinTUIArgumentParser().parse_args()
-
         self._controller = AustinTUIController()
         self._view = self._controller.view
-
-        mode = AustinProfileMode.MEMORY if self._args.memory else AustinProfileMode.TIME
-        self._view.mode = mode
 
         self._view.callback = self.on_view_event
 
         self._global_stats: Optional[str] = None
 
-    def on_sample_received(self, sample: str) -> None:
+        self._exception = None
+        self._austin_terminated = False
+
+    async def on_sample(self, sample: AustinSample) -> None:
         """Austin sample received callback."""
         self._controller.model.austin.update(sample)
 
-    def on_ready(
-        self, austin_process: Process, child_process: Process, command_line: str
-    ) -> None:
-        """Austin ready callback."""
-        self._controller.model.system.set_child_process(child_process)
-        self._controller.model.austin.set_metadata(self._meta)
-        self._controller.model.austin.set_command_line(command_line)
+    async def on_metadata(self, metadata: AustinMetadata) -> None:
+        if metadata.name == "mode":
+            self._view.set_mode(metadata.value)
+        elif metadata.name == "python":
+            self._view.set_python(metadata.value)
+        else:
+            self._controller.model.austin.set_metadata(self._meta)
 
-        self._controller.start()
-
-        self._view.set_mode(self._meta["mode"])
-        self._view.set_pid(child_process.pid, self._args.children)
-        self._view.set_python(self.python_version)
-
-    def on_terminate(self, stats: str) -> None:
+    async def on_terminate(self) -> None:
         """Austin terminate callback."""
-        self._global_stats = stats
+        self._austin_terminated = True
+
+        self._global_stats = None
         self._controller.stop()
-        self._controller.update()
 
         self._view.stop()
 
@@ -115,11 +107,9 @@ class AustinTUI(AsyncAustin):
         {
             AustinView.Event.QUIT: self.on_shutdown,
             AustinView.Event.EXCEPTION: self.on_exception,
-        }.get(event, _unhandled)(
-            data
-        )  # type: ignore[operator]
+        }.get(event, _unhandled)(data)  # type: ignore[operator]
 
-    async def start(self, args: List[str]) -> None:
+    async def start(self, args: AustinTUIArgumentParser) -> None:
         """Start Austin and catch any exceptions."""
         try:
             print("🏁 Starting the Austin TUI ...", end="", flush=True)
@@ -128,22 +118,57 @@ class AustinTUI(AsyncAustin):
             self.shutdown()
             raise
 
+        pargs = self.get_arguments()
+
+        if pargs.pid is not None:
+            child_process = Process(pargs.pid)
+        else:
+            austin_process = Process(self._proc.pid)
+            (child_process,) = austin_process.children()
+        command = child_process.cmdline()
+
+        mode = AustinProfileMode.MEMORY if pargs.memory else AustinProfileMode.TIME
+        self._view.mode = mode
+
+        """Austin ready callback."""
+        self._controller.model.system.set_child_process(child_process)
+        self._controller.model.austin.set_metadata(self._meta)
+        self._controller.model.austin.set_command_line(command)
+
+        self._controller.start()
+
+        self._view.set_pid(child_process.pid, pargs.children)
+
+    async def _start(self) -> None:
+        exc = None
+        try:
+            await self.start(sys.argv[1:])
+            await self.wait()
+            await self._view._input_task
+        except Exception as e:
+            exc = e
+            self._view.close()
+        except KeyboardInterrupt:
+            self._view.close()
+
+        if exc is not None:
+            self._view.close()
+            raise exc
+        if self._exception is not None:
+            self._view.close()
+            raise self._exception
+
     def run(self) -> None:
         """Run the TUI."""
-        loop = asyncio.get_event_loop()
-
-        austin = loop.create_task(
-            self.start(AustinTUIArgumentParser.to_list(self._args))
-        )
-        loop.run_forever()
-
-        self._view.close()
-
-        if not austin.done():
-            austin.cancel()
-
-        if austin.done():
-            austin.result()
+        try:
+            asyncio.run(self._start())
+        except KeyboardInterrupt:
+            try:
+                self.terminate()
+            except AustinError:
+                pass
+        except asyncio.CancelledError:
+            pass
 
     def shutdown(self) -> None:
         """Shutdown the TUI."""
@@ -151,8 +176,7 @@ class AustinTUI(AsyncAustin):
             self.terminate()
         except AustinError:
             pass
-
-        asyncio.get_event_loop().stop()
+        self._view.close()
 
     def on_shutdown(self, _: Any = None) -> None:
         """The shutdown view event handler."""

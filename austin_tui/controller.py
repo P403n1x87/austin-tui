@@ -75,6 +75,7 @@ class AustinTUIController:
         self._scaler = None
         self._formatter = None
         self._last_timestamp = 0
+        self._update_task = None
 
         view_builder = ViewBuilder.from_resource("austin_tui.view", "tui.austinui")
 
@@ -105,7 +106,7 @@ class AustinTUIController:
             else:
                 self.thread_data()  # type: ignore[call-arg]
 
-        self._last_timestamp = self.model.austin.stats.timestamp
+        # self._last_timestamp = self.model.austin.stats.timestamp
 
     def set_thread(self) -> bool:
         """Set the thread to display."""
@@ -139,7 +140,7 @@ class AustinTUIController:
         """Start event."""
         self._add_flamegraph_palette()
         self.view.open()
-        self.view.submit_task(self.update_loop())
+        self._update_task = asyncio.create_task(self.update_loop())
 
         self._formatter, self._scaler = (
             (self.view.fmt_mem, self.view.scale_memory)
@@ -153,6 +154,9 @@ class AustinTUIController:
     def stop(self) -> None:
         """Stop event."""
         self.model.system.stop()
+        if self._update_task is not None:
+            self._update_task.cancel()
+            self._update_task = None
 
     def update(self) -> bool:
         """Update event."""
@@ -183,7 +187,10 @@ class AustinTUIController:
 
             self.view.root_widget.refresh()
 
-            await asyncio.sleep(1)
+            try:
+                await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                break
 
     def _change_thread(self, direction: ThreadNav) -> bool:
         """Change thread."""
@@ -268,7 +275,7 @@ class AustinTUIController:
 
             self.view.root_widget.refresh()
 
-        self.view.submit_task(_dump_stats)
+        await asyncio.get_event_loop().run_in_executor(None, _dump_stats)
 
         return False
 
