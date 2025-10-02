@@ -54,7 +54,7 @@ class Table(Widget):
 
     def _draw_row(self, i: int, row: List[Any]) -> None:
         x = 0
-        available = self.rect.size.x
+        available = self.rect.size.x - 1
         win = self.win.get_win()
         for j in range(self._cols):
             if available <= x:
@@ -107,9 +107,7 @@ class Table(Widget):
             if not win:
                 return False
             win.clear()
-            i = self.pos.y
-            for e in self._data:
+            for i, e in enumerate(self._data, self.pos.y):
                 self._draw_row(i, e)
-                i += 1
 
         return True
