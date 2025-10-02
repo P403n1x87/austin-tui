@@ -94,7 +94,7 @@ class AustinTUI(AsyncAustin):
         self._austin_terminated = True
 
         self._global_stats = None
-        self._controller.stop()
+        await self._controller.stop()
 
         self._view.stop()
 

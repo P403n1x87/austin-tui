@@ -20,11 +20,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import asyncio
 from enum import Enum
 from typing import Any
 from typing import Callable
-from typing import List
 from typing import Optional
 
 from austin_tui import AustinProfileMode
@@ -35,6 +33,13 @@ from austin_tui.widgets.markup import AttrStringChunk
 
 
 # ---- AustinView -------------------------------------------------------------
+
+
+class AustinViewMode(int, Enum):
+    LIVE = 0
+    FULL = 1
+    GRAPH = 2
+    TOP = 3
 
 
 class AustinView(View):
@@ -59,6 +64,8 @@ class AustinView(View):
 
         self._stopped = False
 
+        self.view_mode = AustinViewMode.LIVE
+
     def on_exception(self, exc: Exception) -> None:
         """The on exception Austin view handler."""
         if not self.callback:
@@ -74,24 +81,36 @@ class AustinView(View):
         self.callback(self.Event.QUIT, None)
         return False
 
-    async def on_full_mode_toggled(self) -> bool:
+    def on_mode_selected(self, view_mode: AustinViewMode) -> bool:
+        needs_update = False
+
+        for m, c in {
+            AustinViewMode.LIVE: self.live_mode_cmd,
+            AustinViewMode.GRAPH: self.graph_cmd,
+            AustinViewMode.FULL: self.full_mode_cmd,
+            AustinViewMode.TOP: self.top_mode_cmd,
+        }.items():
+            if needs_toggling := ((m is view_mode) != c.state):
+                c.toggle()
+                needs_update |= needs_toggling
+
+        return needs_update
+
+    async def on_live_mode_selected(self) -> bool:
+        """Handle Live Mode toggle."""
+        return self.on_mode_selected(AustinViewMode.LIVE)
+
+    async def on_full_mode_selected(self) -> bool:
         """Handle Full Mode toggle."""
-        if self.graph_cmd.state:
-            return False
+        return self.on_mode_selected(AustinViewMode.FULL)
 
-        self.full_mode_cmd.toggle()
-        return True
+    async def on_graph_selected(self) -> bool:
+        """Handle Graph Mode toggle."""
+        return self.on_mode_selected(AustinViewMode.GRAPH)
 
-    async def on_graph_toggled(self) -> bool:
-        """Handle graph visualisation toggling."""
-        self.graph_cmd.toggle()
-        self.dataview_selector.refresh()
-        if self.graph_cmd.state:
-            self.full_mode_cmd.set_color("disabled")
-        else:
-            self.full_mode_cmd.toggle()
-            self.full_mode_cmd.toggle()
-        return True
+    async def on_top_mode_selected(self) -> bool:
+        """Handle Full Mode toggle."""
+        return self.on_mode_selected(AustinViewMode.TOP)
 
     async def on_save(self, data: Any = None) -> bool:
         """Handle Save event."""

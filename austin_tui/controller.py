@@ -41,8 +41,10 @@ from austin_tui.adapters import MemoryAdapter
 from austin_tui.adapters import ThreadDataAdapter
 from austin_tui.adapters import ThreadFullDataAdapter
 from austin_tui.adapters import ThreadNameAdapter
+from austin_tui.adapters import ThreadTopDataAdapter
 from austin_tui.model import Model
 from austin_tui.view import ViewBuilder
+from austin_tui.view.austin import AustinViewMode
 from austin_tui.widgets.markup import escape
 
 
@@ -69,12 +71,12 @@ class AustinTUIController:
     thread_name = ThreadNameAdapter
     thread_data = ThreadDataAdapter
     thread_full_data = ThreadFullDataAdapter
+    thread_top_data = ThreadTopDataAdapter
     command_line = CommandLineAdapter
     flamegraph = FlameGraphAdapter
 
     def __init__(self) -> None:
-        self._full_mode = False
-        self._graph = False
+        self._view_mode = AustinViewMode.LIVE
         self._scaler = None
         self._formatter = None
         self._last_timestamp = 0
@@ -101,13 +103,14 @@ class AustinTUIController:
         if not self.model.austin.threads:
             return
 
-        if self._graph:
+        if self._view_mode is AustinViewMode.GRAPH:
             self.flamegraph()  # type: ignore[call-arg]
+        elif self._view_mode is AustinViewMode.FULL:
+            self.thread_full_data()  # type: ignore[call-arg]
+        elif self._view_mode is AustinViewMode.TOP:
+            self.thread_top_data()  # type: ignore[call-arg]
         else:
-            if self._full_mode:
-                self.thread_full_data()  # type: ignore[call-arg]
-            else:
-                self.thread_data()  # type: ignore[call-arg]
+            self.thread_data()  # type: ignore[call-arg]
 
         # self._last_timestamp = self.model.austin.stats.timestamp
 
@@ -154,11 +157,12 @@ class AustinTUIController:
 
         self.command_line()
 
-    def stop(self) -> None:
+    async def stop(self) -> None:
         """Stop event."""
         self.model.system.stop()
         if self._update_task is not None:
             self._update_task.cancel()
+            await self._update_task
             self._update_task = None
 
     def update(self) -> bool:
@@ -183,7 +187,7 @@ class AustinTUIController:
         """The UI update loop."""
         while not self.view._stopped and self.view.is_open and self.view.root_widget:
             if self.update():
-                if self._graph:
+                if self._view_mode is AustinViewMode.GRAPH:
                     self.view.flamegraph.draw()
                 else:
                     self.view.table.draw()
@@ -237,12 +241,41 @@ class AustinTUIController:
             return True
         return False
 
-    async def on_full_mode_toggled(self, _: Any = None) -> bool:
-        """Toggle full mode."""
-        if self._graph:
+    async def on_live_mode_selected(self, _: Any = None) -> bool:
+        """Select live mode."""
+        if self._view_mode is AustinViewMode.LIVE:
             return False
 
-        self._full_mode = not self._full_mode
+        self._view_mode = AustinViewMode.LIVE
+        self.view.dataview_selector.select(0)
+        self.set_thread_data()
+
+        self.view.table.draw()
+        self.view.stats_view.refresh()
+
+        return True
+
+    async def on_top_mode_selected(self, _: Any = None) -> bool:
+        """Select top mode."""
+        if self._view_mode is AustinViewMode.TOP:
+            return False
+
+        self._view_mode = AustinViewMode.TOP
+        self.view.dataview_selector.select(0)
+        self.set_thread_data()
+
+        self.view.table.draw()
+        self.view.stats_view.refresh()
+
+        return True
+
+    async def on_full_mode_selected(self, _: Any = None) -> bool:
+        """Toggle full mode."""
+        if self._view_mode is AustinViewMode.FULL:
+            return False
+
+        self._view_mode = AustinViewMode.FULL
+        self.view.dataview_selector.select(0)
         self.set_thread_data()
 
         self.view.table.draw()
@@ -315,15 +348,15 @@ class AustinTUIController:
         self.view.threshold.set_text(f"{th:.0f}%")
         return True
 
-    async def on_graph_toggled(self, _: Any = None) -> bool:
-        """Toggle graph visualisation."""
-        self._graph = not self._graph
+    async def on_graph_selected(self, _: Any = None) -> bool:
+        """Select graph visualisation."""
+        if self._view_mode is AustinViewMode.GRAPH:
+            return False
 
-        self.view.dataview_selector.select(self._graph)
+        self._view_mode = AustinViewMode.GRAPH
 
-        if self._graph:
-            self.flamegraph()  # type: ignore[call-arg]
-        else:
-            self.set_thread_data()
+        self.view.dataview_selector.select(1)
+
+        self.flamegraph()  # type: ignore[call-arg]
 
         return True

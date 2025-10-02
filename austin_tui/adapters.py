@@ -20,7 +20,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional, Union
+from typing import Any
+from typing import Optional
+from typing import Set
+from typing import Union
 
 from austin.events import ThreadName
 from austin.stats import HierarchicalStats
@@ -28,10 +31,14 @@ from austin.stats import HierarchicalStats
 from austin_tui import AustinProfileMode
 from austin_tui.model import Model
 from austin_tui.model.austin import AustinModel
-from austin_tui.model.system import Bytes, FrozenSystemModel, Percentage, SystemModel
+from austin_tui.model.system import Bytes
+from austin_tui.model.system import FrozenSystemModel
+from austin_tui.model.system import Percentage
+from austin_tui.model.system import SystemModel
 from austin_tui.view import View
 from austin_tui.widgets.graph import FlameGraphData
-from austin_tui.widgets.markup import AttrString, escape
+from austin_tui.widgets.markup import AttrString
+from austin_tui.widgets.markup import escape
 from austin_tui.widgets.table import TableData
 
 
@@ -158,14 +165,11 @@ class MemoryAdapter(Adapter):
         return True
 
 
-def fmt_time(s: int) -> str:
-    """Format microseconds into mm':ss''."""
-    m = int(s // 60e6)
-    ret = '{:02d}"'.format(round(s / 1e6) % 60)
-    if m:
-        ret = str(m) + "'" + ret
-
-    return ret
+def fmt_time(us: int) -> str:
+    """Format microseconds into [mm]m[ss[.ff]]s."""
+    s = us / 1e6
+    m = int(s // 60)
+    return f"{m:02d}m{s:02d}s" if m else f"{s:.2f}s"
 
 
 class DurationAdapter(FreezableAdapter):
@@ -285,6 +289,96 @@ class ThreadDataAdapter(BaseThreadDataAdapter):
             container = child_frame_stats.children
 
         return frame_stats
+
+
+class ThreadTopDataAdapter(BaseThreadDataAdapter):
+    """Thread table top data adapter."""
+
+    def _transform(
+        self, austin: AustinModel, system: Union[SystemModel, FrozenSystemModel]
+    ) -> TableData:
+        formatter, scaler = (
+            (self._view.fmt_mem, self._view.scale_memory)
+            if self._view.mode == AustinProfileMode.MEMORY
+            else (self._view.fmt_time, self._view.scale_time)
+        )
+
+        thread_key = austin.threads[austin.current_thread]
+        pid, _, thread = thread_key.partition(":")
+
+        frame_stats = {}
+        max_scale = (
+            system.max_memory
+            if self._view.mode == AustinProfileMode.MEMORY
+            else system.duration
+        )
+
+        def _add_frame_stats(
+            stats: HierarchicalStats, seen_locations: Set[str]
+        ) -> None:
+            if len(frame_stats) == MAX_LENGTH:
+                frame_stats.append(
+                    [
+                        " " * 8,
+                        " " * 8,
+                        " " * 8,
+                        " " * 8,
+                        self._view.markup(
+                            " <inactive>[truncated view; export the data to MOJO to see more with other tools]</inactive>"
+                        ),
+                    ]
+                )
+                return
+            if len(frame_stats) > MAX_LENGTH:
+                return
+            if stats.total / 1e6 / max_scale < self._model.austin.threshold:
+                return
+
+            column = (
+                f":<lineno>{stats.label.column}</lineno>" if stats.label.column else ""
+            )
+            location = (
+                (escape(stats.label.function))
+                + f" <inactive>(<filename>{escape(stats.label.filename)}</filename>:<lineno>{stats.label.line}</lineno>{column})</inactive>"
+            )
+            frame_stats[location] = (
+                frame_stats.get(location, 0)
+                + stats.own
+                + 1j * stats.total * (location not in seen_locations)
+            )
+
+            if not (children_stats := list(stats.children.values())):
+                return
+
+            new_seen_locations = seen_locations | {location}
+            for child_stats in children_stats[:-1]:
+                _add_frame_stats(child_stats, new_seen_locations)
+
+            _add_frame_stats(children_stats[-1], new_seen_locations)
+
+        pid, _, thread_name = thread_key.partition(":")
+        iid, _, thread = thread_name.partition(":")
+        thread_stats = austin.stats.processes[int(pid)].threads[
+            ThreadName(thread, int(iid))
+        ]
+        if children := list(thread_stats.children.values()):
+            for stats in children[:-1]:
+                _add_frame_stats(stats, set())
+
+            _add_frame_stats(children[-1], set())
+
+        return [
+            (
+                formatter(int(m.real), True),
+                formatter(int(m.imag), True),
+                scaler(int(m.real), max_scale, True),
+                scaler(int(m.imag), max_scale, True),
+                self._view.markup(location),
+            )
+            for location, m in sorted(
+                frame_stats.items(), reverse=True, key=lambda _: _[1].real
+            )
+        ]
 
 
 MAX_DEPTH = 64
@@ -435,7 +529,10 @@ class FlameGraphAdapter(Adapter):
         total = thread.total
         total_pct = min(int(total / system.duration / 1e4), 100)
         data: FlameGraphData = {
-            f"THREAD {thread.label} ⏲️  {fmt_time(total)} ({total_pct}%)": (total, cs)
+            f"THREAD {thread.label.iid}:{thread.label.thread} ⏲️  {fmt_time(total)} ({total_pct}%)": (
+                total,
+                cs,
+            )
         }
         levels = [(c, cs) for c in thread.children.values()]
         while levels:

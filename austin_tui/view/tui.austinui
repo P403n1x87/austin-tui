@@ -199,6 +199,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
           width="9"
           align="center" />
 
+        <aui:ToggleLabel name="live_mode_cmd"
+          text="L"
+          align="center"
+          width="3"
+          on="cmd_on"
+          off="cmd_off"
+          state="1" />
+        <aui:Label name="live_mode_label"
+          text="Live"
+          width="6"
+          align="center" />
+
+        <aui:ToggleLabel name="top_mode_cmd"
+          text="T"
+          align="center"
+          width="3"
+          on="cmd_on"
+          off="cmd_off"
+          state="0" />
+        <aui:Label name="top_mode_label"
+          text="Top"
+          width="5"
+          align="center" />
+
         <aui:ToggleLabel name="full_mode_cmd"
           text="F"
           align="center"
@@ -265,11 +289,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 
   <!-- Signal mappings -->
 
-  <aui:signal key="q" handler="on_quit"              />
-  <aui:signal key="f" handler="on_full_mode_toggled" />
-  <aui:signal key="g" handler="on_graph_toggled"     />
-  <aui:signal key="s" handler="on_save"              />
-  <aui:signal key="p" handler="on_play_pause"        />
+  <aui:signal key="q" handler="on_quit"               />
+  <aui:signal key="l" handler="on_live_mode_selected" />
+  <aui:signal key="t" handler="on_top_mode_selected"  />
+  <aui:signal key="f" handler="on_full_mode_selected" />
+  <aui:signal key="g" handler="on_graph_selected"     />
+  <aui:signal key="s" handler="on_save"               />
+  <aui:signal key="p" handler="on_play_pause"         />
 
   <aui:signal key="KEY_LEFT"  handler="on_previous_thread" />
   <aui:signal key="KEY_RIGHT" handler="on_next_thread"     />
