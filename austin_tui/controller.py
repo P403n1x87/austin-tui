@@ -22,9 +22,12 @@
 
 import asyncio
 from enum import Enum
-from io import StringIO
+from pathlib import Path
 from time import time
 from typing import Any
+
+from austin.events import AustinMetadata
+from austin.format.mojo import MojoStreamWriter
 
 from austin_tui import AustinProfileMode
 from austin_tui.adapters import Adapter
@@ -253,21 +256,17 @@ class AustinTUIController:
 
         def _dump_stats() -> None:
             pid = self.model.system.child_process.pid
-            filename = f"austin_{int(time())}_{pid}.aprof"
+            output_file = Path(f"austin_{int(time())}_{pid}").with_suffix(".mojo")
             try:
-                buffer = StringIO()
-                model.stats.dump(buffer)
-                with open(filename, "w") as fout:
-                    if self.model.austin.metadata is not None:
-                        for n, v in self.model.austin.metadata.items():
-                            fout.write(f"# {n}: {v}\n")
-                        fout.write("\n")
-                    for line in buffer.getvalue().splitlines():
-                        if not line.startswith("# "):
-                            fout.write(line + "\n")
+                with output_file.open("wb") as stream:
+                    mojo_writer = MojoStreamWriter(stream)
+                    for k, v in model.metadata.items():
+                        mojo_writer.write(AustinMetadata(k, v))
+                    for event in model.stats.flatten():
+                        mojo_writer.write(event)
                 self.view.notification.set_text(
                     self.view.markup(
-                        f"Stats saved as <running>{escape(filename)}</running> "
+                        f"Stats saved as <running>{escape(str(output_file))}</running> "
                     )
                 )
             except IOError as e:

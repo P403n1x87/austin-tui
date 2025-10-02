@@ -20,23 +20,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any
-from typing import Optional
-from typing import Union
+from typing import Any, Optional, Union
 
+from austin.events import ThreadName
 from austin.stats import HierarchicalStats
 
 from austin_tui import AustinProfileMode
 from austin_tui.model import Model
 from austin_tui.model.austin import AustinModel
-from austin_tui.model.system import Bytes
-from austin_tui.model.system import FrozenSystemModel
-from austin_tui.model.system import Percentage
-from austin_tui.model.system import SystemModel
+from austin_tui.model.system import Bytes, FrozenSystemModel, Percentage, SystemModel
 from austin_tui.view import View
 from austin_tui.widgets.graph import FlameGraphData
-from austin_tui.widgets.markup import AttrString
-from austin_tui.widgets.markup import escape
+from austin_tui.widgets.markup import AttrString, escape
 from austin_tui.widgets.table import TableData
 
 
@@ -248,7 +243,11 @@ class ThreadDataAdapter(BaseThreadDataAdapter):
         thread_key = austin.threads[austin.current_thread]
         pid, _, thread = thread_key.partition(":")
 
-        thread_stats = austin.stats.processes[int(pid)].threads[thread]
+        pid, _, thread_name = thread_key.partition(":")
+        iid, _, thread = thread_name.partition(":")
+        thread_stats = austin.stats.processes[int(pid)].threads[
+            ThreadName(thread, int(iid))
+        ]
         frames = austin.get_last_stack(thread_key).frames
 
         container = thread_stats.children
@@ -378,9 +377,7 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
             )
 
             if level >= MAX_DEPTH or not (
-                children_stats := [
-                    child_stats for _, child_stats in stats.children.items()
-                ]
+                children_stats := list(stats.children.values())
             ):
                 return
 
@@ -403,7 +400,11 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
                 active,
             )
 
-        thread_stats = austin.stats.processes[int(pid)].threads[thread]
+        pid, _, thread_name = thread_key.partition(":")
+        iid, _, thread = thread_name.partition(":")
+        thread_stats = austin.stats.processes[int(pid)].threads[
+            ThreadName(thread, int(iid))
+        ]
         if children := list(thread_stats.children.values()):
             for stats in children[:-1]:
                 _add_frame_stats(stats, "├─ ", "│  ", 0, thread_stats.children)
@@ -426,9 +427,9 @@ class FlameGraphAdapter(Adapter):
         self, austin: AustinModel, system: Union[SystemModel, FrozenSystemModel]
     ) -> FlameGraphData:
         thread_key = austin.threads[austin.current_thread]
-        pid, _, thread = thread_key.partition(":")
-
-        thread = austin.stats.processes[int(pid)].threads[thread]
+        pid, _, thread_name = thread_key.partition(":")
+        iid, _, thread = thread_name.partition(":")
+        thread = austin.stats.processes[int(pid)].threads[ThreadName(thread, int(iid))]
 
         cs = {}  # type: ignore[var-annotated]
         total = thread.total

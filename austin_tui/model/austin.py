@@ -126,7 +126,7 @@ class AustinModel:
                 return
             self._stats.update(sample)
             self._stats.timestamp = time()
-            thread_key = f"{sample.pid}:{sample.thread}"
+            thread_key = f"{sample.pid}:{sample.iid}:{sample.thread}"
             self._last_stack[thread_key] = sample
             self._threads.add(thread_key)
         finally:
