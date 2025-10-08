@@ -149,6 +149,8 @@ class CpuAdapter(Adapter):
 
     def transform(self) -> Percentage:
         """Get the CPU usage."""
+        if self._model.system.child_process is None:
+            return 0
         return self._model.system.get_cpu(self._model.system.child_process)
 
     def update(self, data: Percentage) -> bool:
@@ -163,6 +165,8 @@ class MemoryAdapter(Adapter):
 
     def transform(self) -> Bytes:
         """Get memory usage."""
+        if self._model.system.child_process is None:
+            return 0
         return self._model.system.get_memory(self._model.system.child_process)
 
     def update(self, data: Bytes) -> bool:
@@ -176,7 +180,7 @@ def fmt_time(us: int) -> str:
     """Format microseconds into [mm]m[ss[.ff]]s."""
     s = us / 1e6
     m = int(s // 60)
-    return f"{m:02d}m{s:02d}s" if m else f"{s:.2f}s"
+    return f"{m:02d}m{int(s):02d}s" if m else f"{s:.2f}s"
 
 
 class DurationAdapter(FreezableAdapter):
@@ -473,17 +477,21 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
                 return
             if stats.total / 1e6 / max_scale < self._model.austin.threshold:
                 return
-            try:
-                active = (
-                    active_bucket is not None
-                    and stats.label in active_bucket
-                    and stats.label == frames[level]
-                    and active_parent
-                )
+            if self._model.system.child_process is None:
+                active = True
                 active_bucket = stats.children
-            except IndexError:
-                active = False
-                active_bucket = None
+            else:
+                try:
+                    active = (
+                        active_bucket is not None
+                        and stats.label in active_bucket
+                        and stats.label == frames[level]
+                        and active_parent
+                    )
+                    active_bucket = stats.children
+                except IndexError:
+                    active = False
+                    active_bucket = None
 
             column = (
                 f":<lineno>{stats.label.column}</lineno>"

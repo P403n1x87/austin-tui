@@ -34,8 +34,10 @@ from typing import Sequence
 from austin.aio import AsyncAustin
 from austin.cli import AustinArgumentParser
 from austin.cli import AustinCommandLineError
+from austin.errors import AustinError
 from austin.events import AustinMetadata
 from austin.events import AustinSample
+from austin.format.mojo import MojoStreamReader
 from austin.format.mojo import MojoStreamWriter
 from psutil import Process
 
@@ -77,12 +79,23 @@ class AustinTUIArgumentParser(AustinArgumentParser):
     def __init__(self) -> None:
         super().__init__(name="austin-tui", full=False)
 
+        self.add_argument(
+            "-o",
+            "--open",
+            help="Open a MOJO file",
+            type=Path,
+        )
+
     def parse_args(self) -> Any:
         """Parse command line arguments and report any errors."""
         try:
             return super().parse_args()
         except AustinCommandLineError as e:
             reason, *code = e.args
+            # If --open was given, the PID/command requirement doesn't apply.
+            args, _ = super().parse_known_args()
+            if getattr(args, "open", None) is not None:
+                return args
             if reason:
                 _print(reason)
             exit(code[0] if code else -1)
@@ -115,6 +128,7 @@ class AustinTUIController:
         self._last_timestamp = 0
         self._update_task: Optional[asyncio.Task[None]] = None
         self._exception: Optional[Exception] = None
+        self._file_mode = False
 
         view_builder = ViewBuilder.from_resource(
             "austin_tui.view", "tui.austinui"
@@ -185,6 +199,10 @@ class AustinTUIController:
         """Start event."""
         pargs = AustinTUIArgumentParser().parse_args()  # type: ignore[call-arg]
 
+        if pargs.open is not None and pargs.open.exists():
+            await self.open_file(pargs.open)
+            return
+
         self.austin = AsyncAustin(self.on_sample, self.on_metadata, self.on_terminate)
 
         await self.austin.start(args)
@@ -236,6 +254,51 @@ class AustinTUIController:
 
         if self._exception is not None:
             raise self._exception
+
+    async def open_file(self, path: Path) -> None:
+        """Open a MOJO file and replay its events into the TUI."""
+        print(f"📂 Opening MOJO file '{path}' ...", end="", flush=True)
+        try:
+            with path.open("rb") as f:
+                mojo = MojoStreamReader(f)
+                for event in mojo:
+                    if isinstance(event, AustinSample):
+                        await self.on_sample(event)
+                    elif isinstance(event, AustinMetadata):
+                        await self.on_metadata(event)
+        except AustinError as e:
+            self.shutdown()
+            _print(f"❌ Failed to open MOJO file '{path}': {e}")
+            exit(-1)
+
+        self.model.austin.set_command_line(["<MOJO file>", str(path)])
+
+        self._view_mode = AustinViewMode.FULL
+        self._file_mode = True
+
+        self._add_flamegraph_palette()
+        self.view.open()
+        self.view.on_mode_selected(AustinViewMode.FULL)
+        self.view.live_mode_cmd.set_color("disabled")
+        self.view.save_cmd.set_color("disabled")
+        self._update_task = asyncio.create_task(self.update_loop())
+
+        self._formatter, self._scaler = (
+            (self.view.fmt_mem, self.view.scale_memory)
+            if self.view.mode == AustinProfileMode.MEMORY
+            else (self.view.fmt_time, self.view.scale_time)
+        )
+
+        self.command_line()
+        self.update()
+
+        await self.stop()
+
+        try:
+            if self.view._input_task is not None:
+                await self.view._input_task
+        except asyncio.CancelledError:
+            pass
 
     async def stop(self) -> None:
         """Called when Austin exits: cancel the update task and mark the view stopped.
@@ -345,7 +408,7 @@ class AustinTUIController:
 
     async def on_live_mode_selected(self, _: Any = None) -> bool:
         """Select live mode."""
-        if self._view_mode is AustinViewMode.LIVE:
+        if self._file_mode or self._view_mode is AustinViewMode.LIVE:
             return False
 
         self._view_mode = AustinViewMode.LIVE
@@ -387,6 +450,9 @@ class AustinTUIController:
 
     async def on_save(self, _: Any = None) -> bool:
         """Save the collected stats."""
+        if self._file_mode:
+            self.view.notification.set_text("")
+            return False
         model = (
             self.model.frozen_austin if self.model.frozen else self.model.austin
         )
@@ -503,8 +569,8 @@ class AustinTUIController:
             self.view.set_mode(metadata.value)
         elif metadata.name == "python":
             self.view.set_python(metadata.value)
-        # else:
-        #     self.model.austin.set_metadata(self._meta)
+        elif metadata.name == "duration":
+            self.model.system._duration = int(metadata.value) / 1e6
 
     async def on_terminate(self) -> None:
         """Austin terminate callback."""

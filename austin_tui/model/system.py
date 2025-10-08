@@ -21,6 +21,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+from typing import Optional
 
 from psutil import NoSuchProcess
 from psutil import Process
@@ -47,6 +48,7 @@ class SystemModel:
     def __init__(self) -> None:
         self._start_time: Seconds = 0
         self._end_time: Seconds = 0
+        self._duration: Optional[Seconds] = None
 
         self._max_mem: Bytes = 0
 
@@ -63,6 +65,8 @@ class SystemModel:
     @property
     def duration(self) -> Seconds:
         """Get the sampling duration."""
+        if self._duration is not None:
+            return self._duration
         return (
             (self._end_time or time.time()) - self._start_time
             if self._start_time
