@@ -112,7 +112,6 @@ class AustinTUI(AsyncAustin):
     async def start(self, args: AustinTUIArgumentParser) -> None:
         """Start Austin and catch any exceptions."""
         try:
-            print("🏁 Starting the Austin TUI ...", end="", flush=True)
             await super().start(args)
         except Exception:
             self.shutdown()
@@ -202,7 +201,8 @@ def main() -> None:
             "❌ Austin failed to start:                                                    \n"
             f"\n  ❯ {e}\n\n"
             "Please make sure that the Austin binary is available from the PATH environment\n"
-            "variable and that the command line arguments that you have provided are correct."
+            "variable and that the command line arguments that you have provided are correct.",
+            file=sys.stderr,
         )
         exit(-1)
 

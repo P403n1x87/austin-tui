@@ -24,17 +24,14 @@ import asyncio
 import curses
 import sys
 from abc import ABC
-from asyncio.coroutines import iscoroutine
 from collections import defaultdict
 from typing import Any
 from typing import Callable
-from typing import Coroutine
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TextIO
 from typing import Type
-from typing import Union
 
 from importlib_resources import files
 from lxml.etree import Element
@@ -196,7 +193,8 @@ class View(ABC):
         if self._open and self.root_widget:
             self.root_widget.hide()
 
-        self._input_task.cancel()
+        if self._input_task is not None:
+            self._input_task.cancel()
 
         self._open = False
 
