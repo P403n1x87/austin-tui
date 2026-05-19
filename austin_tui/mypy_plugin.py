@@ -185,13 +185,17 @@ def _inject_widget_attrs(ctx: ClassDefContext) -> None:
 
 
 class AustinTUIPlugin(Plugin):
+    """Mypy plugin for austin-tui."""
+
     def get_base_class_hook(
         self, fullname: str
     ) -> Optional[Callable[[ClassDefContext], None]]:
+        """Inject widget attributes into View subclasses with __ui_resource__."""
         if fullname == _VIEW_BASE:
             return _inject_widget_attrs
         return None
 
 
 def plugin(version: str) -> type[AustinTUIPlugin]:
+    """Return the plugin class for mypy."""
     return AustinTUIPlugin
