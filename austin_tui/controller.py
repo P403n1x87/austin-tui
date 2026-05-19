@@ -82,7 +82,9 @@ class AustinTUIController:
         self._last_timestamp = 0
         self._update_task = None
 
-        view_builder = ViewBuilder.from_resource("austin_tui.view", "tui.austinui")
+        view_builder = ViewBuilder.from_resource(
+            "austin_tui.view", "tui.austinui"
+        )
 
         self.view = view = view_builder.build()  # type: ignore[assignment]
 
@@ -185,7 +187,11 @@ class AustinTUIController:
 
     async def update_loop(self) -> None:
         """The UI update loop."""
-        while not self.view._stopped and self.view.is_open and self.view.root_widget:
+        while (
+            not self.view._stopped
+            and self.view.is_open
+            and self.view.root_widget
+        ):
             if self.update():
                 if self._view_mode is AustinViewMode.GRAPH:
                     self.view.flamegraph.draw()
@@ -201,7 +207,9 @@ class AustinTUIController:
 
     def _change_thread(self, direction: ThreadNav) -> bool:
         """Change thread."""
-        austin = self.model.frozen_austin if self.model.frozen else self.model.austin
+        austin = (
+            self.model.frozen_austin if self.model.frozen else self.model.austin
+        )
         prev_index = austin.current_thread
 
         austin.current_thread = max(
@@ -285,11 +293,15 @@ class AustinTUIController:
 
     async def on_save(self, _: Any = None) -> bool:
         """Save the collected stats."""
-        model = self.model.frozen_austin if self.model.frozen else self.model.austin
+        model = (
+            self.model.frozen_austin if self.model.frozen else self.model.austin
+        )
 
         def _dump_stats() -> None:
             pid = self.model.system.child_process.pid
-            output_file = Path(f"austin_{int(time())}_{pid}").with_suffix(".mojo")
+            output_file = Path(f"austin_{int(time())}_{pid}").with_suffix(
+                ".mojo"
+            )
             try:
                 with output_file.open("wb") as stream:
                     mojo_writer = MojoStreamWriter(stream)
@@ -318,7 +330,9 @@ class AustinTUIController:
 
         self.model.toggle_freeze()
         self.update()
-        self.view.notification.set_text("Paused" if self.model.frozen else "Resumed")
+        self.view.notification.set_text(
+            "Paused" if self.model.frozen else "Resumed"
+        )
         return True
 
     def _change_threshold(self, delta: float) -> float:

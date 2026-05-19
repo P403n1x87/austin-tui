@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import List
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape as escape
 
 from lxml import etree
 

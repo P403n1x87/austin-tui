@@ -24,6 +24,7 @@ import os
 import sys
 from enum import Enum
 from traceback import format_exception
+from typing import Any
 
 
 class AustinProfileMode(Enum):
@@ -36,7 +37,7 @@ class AustinProfileMode(Enum):
 if os.environ.get("AUSTIN_TUI_DEBUG"):
     _original_excepthook = sys.excepthook
 
-    def _excepthook(exc_type, exc, tb):
+    def _excepthook(exc_type: Any, exc: Any, tb: Any) -> None:
         try:
             os.remove("austin-tui.exc")
         except Exception:

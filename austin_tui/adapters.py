@@ -189,7 +189,11 @@ class CurrentThreadAdapter(Adapter):
 
     def transform(self) -> Union[str, AttrString]:
         """Get current thread."""
-        austin = self._model.frozen_austin if self._model.frozen else self._model.austin
+        austin = (
+            self._model.frozen_austin
+            if self._model.frozen
+            else self._model.austin
+        )
         n = len(austin.threads)
         if not n:
             return "--/--"
@@ -208,10 +212,16 @@ class ThreadNameAdapter(FreezableAdapter):
 
     def transform(self) -> Union[str, AttrString]:
         """Get the thread name."""
-        austin = self._model.frozen_austin if self._model.frozen else self._model.austin
+        austin = (
+            self._model.frozen_austin
+            if self._model.frozen
+            else self._model.austin
+        )
         if austin.threads:
             pid, _, tid = austin.threads[austin.current_thread].partition(":")
-            return self._view.markup(f"<pid><b>{pid}</b></pid>:<tid><b>{tid}</b></tid>")
+            return self._view.markup(
+                f"<pid><b>{pid}</b></pid>:<tid><b>{tid}</b></tid>"
+            )
         return "--:--"
 
     def update(self, data: Union[str, AttrString]) -> bool:
@@ -224,8 +234,16 @@ class BaseThreadDataAdapter(Adapter):
 
     def transform(self) -> TableData:
         """Transform according to the right model."""
-        austin = self._model.frozen_austin if self._model.frozen else self._model.austin
-        system = self._model.frozen_system if self._model.frozen else self._model.system
+        austin = (
+            self._model.frozen_austin
+            if self._model.frozen
+            else self._model.austin
+        )
+        system = (
+            self._model.frozen_system
+            if self._model.frozen
+            else self._model.system
+        )
         return self._transform(austin, system)
 
     def update(self, data: TableData) -> bool:
@@ -264,7 +282,10 @@ class ThreadDataAdapter(BaseThreadDataAdapter):
 
         for frame in frames or []:
             child_frame_stats = container[frame]
-            if child_frame_stats.total / 1e6 / max_scale < self._model.austin.threshold:
+            if (
+                child_frame_stats.total / 1e6 / max_scale
+                < self._model.austin.threshold
+            ):
                 break
             column = (
                 f":<lineno>{child_frame_stats.label.column}</lineno>"
@@ -335,7 +356,9 @@ class ThreadTopDataAdapter(BaseThreadDataAdapter):
                 return
 
             column = (
-                f":<lineno>{stats.label.column}</lineno>" if stats.label.column else ""
+                f":<lineno>{stats.label.column}</lineno>"
+                if stats.label.column
+                else ""
             )
             location = (
                 (escape(stats.label.function))
@@ -446,7 +469,9 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
                 active_bucket = None
 
             column = (
-                f":<lineno>{stats.label.column}</lineno>" if stats.label.column else ""
+                f":<lineno>{stats.label.column}</lineno>"
+                if stats.label.column
+                else ""
             )
             location = (
                 (
@@ -466,7 +491,9 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
                     formatter(stats.total, active),
                     scaler(stats.own, max_scale, active),
                     scaler(stats.total, max_scale, active),
-                    self._view.markup(f" <inactive>{marker}</inactive>{location}"),
+                    self._view.markup(
+                        f" <inactive>{marker}</inactive>{location}"
+                    ),
                 ]
             )
 
@@ -503,7 +530,9 @@ class ThreadFullDataAdapter(BaseThreadDataAdapter):
             for stats in children[:-1]:
                 _add_frame_stats(stats, "├─ ", "│  ", 0, thread_stats.children)
 
-            _add_frame_stats(children[-1], "└─ ", "   ", 0, thread_stats.children)
+            _add_frame_stats(
+                children[-1], "└─ ", "   ", 0, thread_stats.children
+            )
 
         return frame_stats
 
@@ -513,8 +542,16 @@ class FlameGraphAdapter(Adapter):
 
     def transform(self) -> dict:
         """Transform according to the right model."""
-        austin = self._model.frozen_austin if self._model.frozen else self._model.austin
-        system = self._model.frozen_system if self._model.frozen else self._model.system
+        austin = (
+            self._model.frozen_austin
+            if self._model.frozen
+            else self._model.austin
+        )
+        system = (
+            self._model.frozen_system
+            if self._model.frozen
+            else self._model.system
+        )
         return self._transform(austin, system)  # type: ignore[arg-type]
 
     def _transform(
@@ -523,7 +560,9 @@ class FlameGraphAdapter(Adapter):
         thread_key = austin.threads[austin.current_thread]
         pid, _, thread_name = thread_key.partition(":")
         iid, _, thread = thread_name.partition(":")
-        thread = austin.stats.processes[int(pid)].threads[ThreadName(thread, int(iid))]
+        thread = austin.stats.processes[int(pid)].threads[
+            ThreadName(thread, int(iid))
+        ]
 
         cs = {}  # type: ignore[var-annotated]
         total = thread.total
@@ -551,6 +590,6 @@ class FlameGraphAdapter(Adapter):
     def update(self, data: FlameGraphData) -> bool:
         """Update the table."""
         (header,) = data
-        return self._view.flamegraph.set_data(data) | self._view.graph_header.set_text(
-            " FLAME GRAPH FOR " + header
-        )
+        return self._view.flamegraph.set_data(
+            data
+        ) | self._view.graph_header.set_text(" FLAME GRAPH FOR " + header)

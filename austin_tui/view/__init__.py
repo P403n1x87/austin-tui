@@ -23,7 +23,6 @@
 import asyncio
 import curses
 import sys
-from abc import ABC
 from collections import defaultdict
 from typing import Any
 from typing import Callable
@@ -90,7 +89,7 @@ def _validate_ns(node: Element) -> None:
         raise ViewBuilderError(f"Node '{node}' has invalid namespace")
 
 
-class View(ABC):
+class View:
     """View object.
 
     All coroutines are collected and scheduled for execution when the view is
@@ -219,7 +218,9 @@ class ViewBuilder:
         try:
             view = _find_class(view_class)(**self._root.attrib)
         except _ClassNotFoundError:
-            raise ViewBuilderError(f"Cannot find view class '{view_class}'") from None
+            raise ViewBuilderError(
+                f"Cannot find view class '{view_class}'"
+            ) from None
 
         root, *rest = self._root
         view.root_widget = view._build(root)
@@ -270,7 +271,9 @@ class ViewBuilder:
         holders = [view, *controllers]
         for event, handler in self._signals.items():
             try:
-                methods = [getattr(_, handler) for _ in holders if hasattr(_, handler)]
+                methods = [
+                    getattr(_, handler) for _ in holders if hasattr(_, handler)
+                ]
                 if not methods:
                     raise AttributeError()
                 for method in methods:
@@ -297,6 +300,9 @@ class ViewBuilder:
         """Build view from a resource file."""
         return cls(
             parse_xml_string(
-                files(module).joinpath(resource).read_text(encoding="utf8").encode()
+                files(module)
+                .joinpath(resource)
+                .read_text(encoding="utf8")
+                .encode()
             )
         )

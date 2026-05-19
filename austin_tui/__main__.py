@@ -82,6 +82,7 @@ class AustinTUI(AsyncAustin):
         self._controller.model.austin.update(sample)
 
     async def on_metadata(self, metadata: AustinMetadata) -> None:
+        """Austin metadata received callback."""
         if metadata.name == "mode":
             self._view.set_mode(metadata.value)
         elif metadata.name == "python":
@@ -126,7 +127,9 @@ class AustinTUI(AsyncAustin):
             (child_process,) = austin_process.children()
         command = child_process.cmdline()
 
-        mode = AustinProfileMode.MEMORY if pargs.memory else AustinProfileMode.TIME
+        mode = (
+            AustinProfileMode.MEMORY if pargs.memory else AustinProfileMode.TIME
+        )
         self._view.mode = mode
 
         """Austin ready callback."""

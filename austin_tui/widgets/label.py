@@ -79,7 +79,9 @@ class Label(Widget):
         self.text = text
         self.ellipsize = ellipsize
         self.align = (
-            align if isinstance(align, TextAlign) else getattr(TextAlign, align.upper())
+            align
+            if isinstance(align, TextAlign)
+            else getattr(TextAlign, align.upper())
         )
 
     def set_text(self, text: Any) -> bool:

@@ -21,8 +21,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import curses
-from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -60,7 +58,9 @@ class Rect:
     described by a position point and a size point.
     """
 
-    def __init__(self, pos: Union[Point, complex], size: Union[Point, complex]) -> None:
+    def __init__(
+        self, pos: Union[Point, complex], size: Union[Point, complex]
+    ) -> None:
         self.pos = Point(pos)  # type: ignore[call-overload]
         self.size = Point(size)  # type: ignore[call-overload]
 

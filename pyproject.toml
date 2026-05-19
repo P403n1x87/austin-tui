@@ -47,7 +47,7 @@ dependencies = [
   "psutil",
   "windows-curses~=2.1; sys_platform == 'win32'",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dynamic = ["version"]
 
@@ -72,19 +72,14 @@ python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 [tool.hatch.envs.checks]
 dependencies = [
   "mypy~=1.0",
-  "flake8~=5.0.4",
-  "flake8-annotations~=2.9.1",
-  "flake8-black",
-  "flake8-bugbear~=22.9.23",
-  "flake8-docstrings~=1.6.0",
-  "flake8-import-order~=0.18.1",
-  "flake8-isort~=5.0.0",
+  "ruff",
 ]
 python = "3.12"
 template = "checks"
 
 [tool.hatch.envs.checks.scripts]
-linting = "flake8 {args} austin_tui/ test/ "
+linting = "ruff check {args} austin_tui/ tests/"
+formatting = "ruff format {args} austin_tui/ tests/"
 typing = "mypy --show-error-codes --install-types --non-interactive {args} austin_tui/ tests/"
 
 [tool.hatch.envs.coverage]
@@ -111,10 +106,33 @@ source = ["austin_tui"]
 [tool.coverage.report]
 show_missing = true
 
-[tool.isort]
-force_single_line = true
-lines_after_imports = 2
-profile = "black"
+[tool.ruff]
+line-length = 80
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["ANN", "B", "C", "D", "E", "F", "W", "I"]
+ignore = [
+  "ANN401",
+  "C901",
+  "D100", "D104", "D107",
+  "E203", "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "D"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+known-first-party = ["austin_tui"]
+lines-after-imports = 2
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.mypy]
 exclude = []

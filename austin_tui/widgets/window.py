@@ -22,7 +22,6 @@
 
 import curses
 from typing import Optional
-from typing import Tuple
 
 from austin_tui.widgets import Container
 from austin_tui.widgets import Point
