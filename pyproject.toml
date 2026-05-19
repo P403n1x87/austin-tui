@@ -137,6 +137,7 @@ indent-style = "space"
 [tool.mypy]
 exclude = []
 ignore_missing_imports = true
+plugins = ["austin_tui.mypy_plugin"]
 
 [[tool.mypy.overrides]]
 ignore_errors = true

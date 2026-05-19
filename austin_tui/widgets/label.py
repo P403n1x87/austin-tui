@@ -127,7 +127,7 @@ class Label(Widget):
         except curses.error:
             return 0
 
-    def resize(self, rect: Optional[Rect] = None) -> bool:
+    def resize(self, rect: Rect) -> bool:
         """Resize logic for the label object."""
         width = min(self.width, rect.size.real) or rect.size.real
         height = min(self.height, rect.size.imag) or rect.size.imag
@@ -192,6 +192,8 @@ class Label(Widget):
 
     def hide(self) -> None:
         """Hide the label."""
+        if self.win is None:
+            return
         win = self.win.get_win()
         if not win:
             return
@@ -299,10 +301,10 @@ class BarPlot(Label):
     ) -> None:
         super().__init__(name, width=8, color=color, ellipsize=False)
 
-        self._values = deque(
+        self._values: deque[float] = deque(
             [int(init)] * width if init is not None else [], maxlen=width
         )
-        self.scale = int(scale or 0)
+        self.scale: float = int(scale or 0)
         self.auto = not scale
 
     def _plot(self) -> bool:
@@ -313,7 +315,7 @@ class BarPlot(Label):
             )
         )
 
-    def push(self, value: int) -> bool:
+    def push(self, value: float) -> bool:
         """Push a new value to the plot."""
         self._values.append(value)
         if self.auto:

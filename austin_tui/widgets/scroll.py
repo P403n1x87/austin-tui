@@ -38,7 +38,7 @@ class ScrollView(Container):
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self._win: Optional[curses._CursesWindow] = None
+        self._win: Optional[curses.window] = None
 
         self.win = self
 
@@ -48,7 +48,7 @@ class ScrollView(Container):
         self.w = 1
         self.h = 1
 
-    def get_win(self) -> Optional["curses._CursesWindow"]:
+    def get_win(self) -> Optional["curses.window"]:
         """Get the underlying curses pad.
 
         Use with care.
@@ -159,17 +159,24 @@ class ScrollView(Container):
         if not self._win:
             return
 
+        if self.parent is None or self.parent.win is None:
+            return
+
+        parent_win = self.parent.win.get_win()
+        if parent_win is None:
+            return
+
         y0, x0 = self.pos.y, self.pos.x
         h, w = self.size.y, self.size.x
 
         x = x0 + w - 1
 
-        self.parent.win._win.vline(y0, x, curses.ACS_VLINE, h)
+        parent_win.vline(y0, x, curses.ACS_VLINE, h)
 
         bar_h = min(int(h * h / self.h) + 1, h)
         if bar_h != h:
             bar_y = int(self.curr_y / self.h * h)
-            self.parent.win._win.vline(y0 + bar_y, x, curses.ACS_CKBOARD, bar_h)
+            parent_win.vline(y0 + bar_y, x, curses.ACS_CKBOARD, bar_h)
 
     def resize(self, rect: Rect) -> bool:
         """Resize the scroll view."""

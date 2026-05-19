@@ -53,6 +53,8 @@ class AustinView(View):
         EXCEPTION = 0
         QUIT = 1
 
+    __ui_resource__ = "tui.austinui"
+
     def __init__(
         self,
         name: str,
@@ -244,7 +246,7 @@ class AustinView(View):
         )
 
     def scale_memory(
-        self, memory: int, max_memory: int, active: bool = True
+        self, memory: int, max_memory: float, active: bool = True
     ) -> AttrStringChunk:
         """Scale a memory value and return an attribute string chunk."""
         return self._scaler(
@@ -252,7 +254,7 @@ class AustinView(View):
         )
 
     def scale_time(
-        self, time: int, duration: int, active: bool = True
+        self, time: int, duration: float, active: bool = True
     ) -> AttrStringChunk:
         """Scale a time value and return an attribute string chunk."""
         return self._scaler(min(time / 1e4 / duration, 100), active)

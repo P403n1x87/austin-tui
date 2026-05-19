@@ -110,7 +110,7 @@ class AustinTUI(AsyncAustin):
             AustinView.Event.EXCEPTION: self.on_exception,
         }.get(event, _unhandled)(data)  # type: ignore[operator]
 
-    async def start(self, args: AustinTUIArgumentParser) -> None:
+    async def start(self, args: Any) -> None:
         """Start Austin and catch any exceptions."""
         try:
             await super().start(args)
@@ -146,7 +146,8 @@ class AustinTUI(AsyncAustin):
         try:
             await self.start(sys.argv[1:])
             await self.wait()
-            await self._view._input_task
+            if self._view._input_task is not None:
+                await self._view._input_task
         except Exception as e:
             exc = e
             self._view.close()

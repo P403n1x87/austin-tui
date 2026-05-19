@@ -25,6 +25,8 @@ from enum import Enum
 from pathlib import Path
 from time import time
 from typing import Any
+from typing import Callable
+from typing import Optional
 
 from austin.events import AustinMetadata
 from austin.format.mojo import MojoStreamWriter
@@ -44,6 +46,7 @@ from austin_tui.adapters import ThreadNameAdapter
 from austin_tui.adapters import ThreadTopDataAdapter
 from austin_tui.model import Model
 from austin_tui.view import ViewBuilder
+from austin_tui.view.austin import AustinView
 from austin_tui.view.austin import AustinViewMode
 from austin_tui.widgets.markup import escape
 
@@ -77,16 +80,17 @@ class AustinTUIController:
 
     def __init__(self) -> None:
         self._view_mode = AustinViewMode.LIVE
-        self._scaler = None
-        self._formatter = None
+        self._scaler: Optional[Callable[..., Any]] = None
+        self._formatter: Optional[Callable[..., Any]] = None
         self._last_timestamp = 0
-        self._update_task = None
+        self._update_task: Optional[asyncio.Task[None]] = None
 
         view_builder = ViewBuilder.from_resource(
             "austin_tui.view", "tui.austinui"
         )
 
-        self.view = view = view_builder.build()  # type: ignore[assignment]
+        self.view: AustinView = view_builder.build()  # type: ignore[assignment]
+        view = self.view
 
         view_builder.autoconnect(self)
 
@@ -208,7 +212,9 @@ class AustinTUIController:
     def _change_thread(self, direction: ThreadNav) -> bool:
         """Change thread."""
         austin = (
-            self.model.frozen_austin if self.model.frozen else self.model.austin
+            self.model.frozen_austin or self.model.austin
+            if self.model.frozen
+            else self.model.austin
         )
         prev_index = austin.current_thread
 
@@ -228,7 +234,7 @@ class AustinTUIController:
     async def on_next_thread(self) -> bool:
         """Handle next thread event."""
         if self._change_thread(ThreadNav.NEXT):
-            if self._graph:
+            if self._view_mode is AustinViewMode.GRAPH:
                 self.view.flamegraph.draw()
                 self.view.flame_view.refresh()
             else:
@@ -240,7 +246,7 @@ class AustinTUIController:
     async def on_previous_thread(self) -> bool:
         """Handle previous thread event."""
         if self._change_thread(ThreadNav.PREV):
-            if self._graph:
+            if self._view_mode is AustinViewMode.GRAPH:
                 self.view.flamegraph.draw()
                 self.view.flame_view.refresh()
             else:
@@ -298,6 +304,7 @@ class AustinTUIController:
         )
 
         def _dump_stats() -> None:
+            assert self.model.system.child_process is not None
             pid = self.model.system.child_process.pid
             output_file = Path(f"austin_{int(time())}_{pid}").with_suffix(
                 ".mojo"

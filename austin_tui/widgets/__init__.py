@@ -91,7 +91,7 @@ class Widget:
     """
 
     def __init__(self, name: str, width: int = 0, height: int = 0) -> None:
-        self._win: Optional[curses._CursesWindow] = None
+        self._win: Optional[curses.window] = None
         self.win: Optional[Widget] = None
         self.parent: Optional[Widget] = None
         self.view = None
@@ -168,6 +168,10 @@ class Widget:
         This method must return ``True`` if a refresh of the screen is required.
         """
         return False
+
+    def get_win(self) -> Optional["curses.window"]:
+        """Get the underlying curses window."""
+        return self._win
 
     def resize(self, rect: Rect) -> bool:
         """Resize the widget.

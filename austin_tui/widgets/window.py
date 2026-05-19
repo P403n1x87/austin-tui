@@ -113,10 +113,11 @@ class Window(Container):
 
         As per curses convention this returns the tuple (_height_, _width_).
         """
+        assert self._win is not None
         y, x = self._win.getmaxyx()
         return Point(x, y)
 
-    def get_win(self) -> Optional["curses._CursesWindow"]:
+    def get_win(self) -> Optional["curses.window"]:
         """Get the underlying curses window.
 
         Use with care.
