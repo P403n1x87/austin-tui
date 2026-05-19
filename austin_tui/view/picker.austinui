@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- This file is part of "austin-tui" which is released under GPL.
+
+See file LICENCE or go to http://www.gnu.org/licenses/ for full license
+details.
+
+austin-tui is top-like TUI for Austin.
+
+Copyright (c) 2018-2020 Gabriele N. Tornetta <phoenix1987@gmail.com>.
+All rights reserved.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
+
+<aui:PickerView xmlns:aui="http://austin.p403n1x87.com/ui" name="picker">
+  <aui:Window name="main">
+    <aui:Box name="main_box" flow="vertical">
+
+      <!-- Header: logo on the left, subtitle on the right -->
+      <aui:Box name="header_box" flow="horizontal">
+
+        <aui:Box name="logo_box" flow="vertical">
+          <aui:Label name="title"
+            text="Austin  TUI"
+            align="center"
+            width="15"
+            height="1"
+            bold="true" />
+          <aui:Label name="logo"
+            text="_________\n⎝__⎠ ⎝__⎠"
+            align="center"
+            width="15"
+            height="3"
+            color="logo"
+            bold="true" />
+        </aui:Box>
+
+        <aui:Box name="subtitle_box" flow="vertical">
+          <aui:Label name="subtitle"
+            text="  Select a Python process to profile"
+            color="picker_header"
+            height="1" />
+        </aui:Box>
+
+      </aui:Box>
+
+      <!-- Process list -->
+      <aui:ScrollView name="proc_scroll">
+        <aui:Table name="proc_table" columns="2" />
+      </aui:ScrollView>
+
+      <!-- Command bar -->
+      <aui:CommandBar name="command_bar">
+        <aui:Label name="up_cmd"    text="↑"      width="3"  align="center" color="cmd_key" />
+        <aui:Label name="up_lbl"    text="Up"     width="4"                               />
+        <aui:Label name="down_cmd"  text="↓"      width="3"  align="center" color="cmd_key" />
+        <aui:Label name="down_lbl"  text="Down"   width="6"                               />
+        <aui:Label name="enter_cmd" text="↵"      width="3"  align="center" color="cmd_key" />
+        <aui:Label name="enter_lbl" text="Select" width="8"                               />
+        <aui:Label name="quit_cmd"  text="q"      width="3"  align="center" color="cmd_key" />
+        <aui:Label name="quit_lbl"  text="Quit"   width="5"                               />
+      </aui:CommandBar>
+
+    </aui:Box>
+  </aui:Window>
+
+  <!-- Signal mappings -->
+  <aui:signal key="KEY_UP"   handler="on_up"   />
+  <aui:signal key="KEY_DOWN" handler="on_down" />
+  <aui:signal key="q"        handler="on_quit" />
+  <aui:signal key="Q"        handler="on_quit" />
+
+  <!-- Palette -->
+  <!-- See https://github.com/gookit/color/blob/c7dc09464b28518c2ae383fa16b989e7c0169599/_examples/images/color-256.png -->
+
+  <aui:palette>
+    <!-- Header -->
+    <aui:color name="logo"          fg="1"   />
+    <aui:color name="picker_header" fg="246" />
+
+    <!-- Command bar -->
+    <aui:color name="cmd_key" bg="18" />
+
+    <!-- Process list syntax highlighting -->
+    <aui:color name="proc_pid"  fg="229" />  <!-- warm yellow: PID number -->
+    <aui:color name="proc_path" fg="242" />  <!-- dim gray: directory prefix -->
+    <aui:color name="proc_exec" fg="10"  />  <!-- bright green: executable name -->
+    <aui:color name="proc_flag" fg="226" />  <!-- yellow: flags and options -->
+    <aui:color name="proc_arg"  fg="251" />  <!-- light gray: positional args -->
+  </aui:palette>
+</aui:PickerView>

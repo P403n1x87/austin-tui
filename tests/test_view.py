@@ -1,4 +1,5 @@
 from austin_tui.view import ViewBuilder
+from austin_tui.view.austin import AustinView  # noqa: F401
 from austin_tui.widgets import Rect
 from tests.mcurses import MWindow
 

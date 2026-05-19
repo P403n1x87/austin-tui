@@ -26,6 +26,7 @@ import sys
 from austin.errors import AustinError
 
 from austin_tui.controller import AustinTUIController
+from austin_tui.picker import pick_python_process
 
 
 class AustinTUI:
@@ -51,12 +52,35 @@ class AustinTUI:
             raise
 
 
+def _needs_picker() -> bool:
+    """Return True when no target process or command was specified."""
+    # Flags that consume the next token as their value.
+    value_flags = {"-i", "--interval", "-x", "--exposure", "-t", "--timeout"}
+    it = iter(sys.argv[1:])
+    for arg in it:
+        if arg in value_flags:
+            next(it, None)
+        elif arg.startswith(("-p", "--pid", "--open")):
+            return False  # explicit PID or file specified
+        elif not arg.startswith("-"):
+            return False  # positional command found
+    return True
+
+
 def main() -> None:
     """Main function."""
     if sys.platform == "win32":
         asyncio.set_event_loop(asyncio.ProactorEventLoop())
 
+    if _needs_picker():
+        pid = pick_python_process()
+        if pid is None:
+            exit(0)
+        sys.argv = [sys.argv[0], "-p", str(pid)]
+
     tui = AustinTUI()
+
+    import os
 
     try:
         tui.run()
@@ -68,15 +92,20 @@ def main() -> None:
             "variable and that the command line arguments that you have provided are correct.",
             file=sys.stderr,
         )
-        import os
+    except ValueError:
+        print(
+            "❌ Austin produced no output. If you are attaching to an existing process,\n"
+            "   try running austin-tui with sudo.",
+            file=sys.stderr,
+        )
+    else:
+        exit(0)
 
-        if os.environ.get("AUSTIN_DEBUG", None) is not None:
-            import traceback
+    if os.environ.get("AUSTIN_DEBUG", None) is not None:
+        import traceback
 
-            traceback.print_exc()
-        exit(-1)
-
-    exit(0)
+        traceback.print_exc()
+    exit(-1)
 
 
 if __name__ == "__main__":

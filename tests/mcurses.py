@@ -9,7 +9,7 @@ class MWindow:
     def addstr(self, *args, **kwargs):
         pass
 
-    def refresh(self):
+    def refresh(self, *args, **kwargs):
         pass
 
     def resize(self, *args, **kwargs):
