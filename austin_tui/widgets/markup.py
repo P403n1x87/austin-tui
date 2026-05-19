@@ -27,7 +27,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import List
-from xml.sax.saxutils import escape
+from typing import Optional
+from xml.sax.saxutils import escape as escape
 
 from lxml import etree
 
@@ -83,7 +84,11 @@ class AttrStringChunk(Writable):
         return attr
 
     def write(  # type: ignore[override]
-        self, window: "curses._CursesWindow", y: int, x: int, maxlen: int = None
+        self,
+        window: "curses.window",
+        y: int,
+        x: int,
+        maxlen: Optional[int] = None,
     ) -> int:
         """Write the chunk on the given curses window.
 
@@ -135,7 +140,11 @@ class AttrString(Writable):
         return sum(len(_) for _ in self._chunks)
 
     def write(  # type: ignore[override]
-        self, window: "curses._CursesWindow", y: int, x: int, maxlen: int = None
+        self,
+        window: "curses.window",
+        y: int,
+        x: int,
+        maxlen: Optional[int] = None,
     ) -> int:
         """Write the attribute string on the given window.
 

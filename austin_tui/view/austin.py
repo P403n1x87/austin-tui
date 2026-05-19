@@ -36,6 +36,8 @@ from austin_tui.widgets.markup import AttrStringChunk
 
 
 class AustinViewMode(int, Enum):
+    """Austin view display modes."""
+
     LIVE = 0
     FULL = 1
     GRAPH = 2
@@ -50,6 +52,8 @@ class AustinView(View):
 
         EXCEPTION = 0
         QUIT = 1
+
+    __ui_resource__ = "tui.austinui"
 
     def __init__(
         self,
@@ -77,11 +81,14 @@ class AustinView(View):
     async def on_quit(self) -> bool:
         """Handle Quit event."""
         if not self.callback:
-            raise RuntimeError("AustinTUI requires a callback to handle quit events.")
+            raise RuntimeError(
+                "AustinTUI requires a callback to handle quit events."
+            )
         self.callback(self.Event.QUIT, None)
         return False
 
     def on_mode_selected(self, view_mode: AustinViewMode) -> bool:
+        """Handle view mode selection."""
         needs_update = False
 
         for m, c in {
@@ -176,7 +183,9 @@ class AustinView(View):
         self.play_pause_label.set_text(
             "Resume" if self.play_pause_cmd.state else "Pause"
         )
-        self.logo.set_color("paused" if self.play_pause_cmd.state else "running")
+        self.logo.set_color(
+            "paused" if self.play_pause_cmd.state else "running"
+        )
         return True
 
     def open(self) -> None:
@@ -207,7 +216,9 @@ class AustinView(View):
     def fmt_time(self, t: int, active: bool = True) -> AttrString:
         """Format time value."""
         time = f"{_fmt_time(t):^8}"
-        return self.markup(f"<inactive>{time}</inactive>" if not active else time)
+        return self.markup(
+            f"<inactive>{time}</inactive>" if not active else time
+        )
 
     def fmt_mem(self, s: int, active: bool = True) -> AttrString:
         """Format memory value."""
@@ -235,13 +246,15 @@ class AustinView(View):
         )
 
     def scale_memory(
-        self, memory: int, max_memory: int, active: bool = True
+        self, memory: int, max_memory: float, active: bool = True
     ) -> AttrStringChunk:
         """Scale a memory value and return an attribute string chunk."""
-        return self._scaler(memory / max_memory * 100 if max_memory else 0, active)
+        return self._scaler(
+            memory / max_memory * 100 if max_memory else 0, active
+        )
 
     def scale_time(
-        self, time: int, duration: int, active: bool = True
+        self, time: int, duration: float, active: bool = True
     ) -> AttrStringChunk:
         """Scale a time value and return an attribute string chunk."""
         return self._scaler(min(time / 1e4 / duration, 100), active)

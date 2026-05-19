@@ -9,7 +9,6 @@ from austin_tui.widgets.label import Label
 from austin_tui.widgets.scroll import ScrollView
 from austin_tui.widgets.table import Table
 from austin_tui.widgets.window import Window
-from tests.mcurses import MWindow
 
 
 class MockWindow(Window):

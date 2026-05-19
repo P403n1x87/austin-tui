@@ -82,13 +82,17 @@ class FlameGraph(Widget):
                 scale = w / v
 
             self._height = h(data, scale)
+            assert self.parent is not None
             self.parent.resize(self.parent.rect)
             return True
 
         return False
 
     def _draw_frame(self, x: int, y: int, w: float, text: str) -> None:
+        assert self.win is not None
         win = self.win.get_win()
+        if win is None:
+            return
 
         iw = int(w)
         fw = int((w - iw) * 8)
@@ -125,7 +129,11 @@ class FlameGraph(Widget):
         if not self.win or not self._data:
             return False
 
-        self.win.get_win().clear()
+        assert self.win is not None
+        win = self.win.get_win()
+        if win is None:
+            return False
+        win.clear()
 
         w = self.size.x
         for _, (v, _) in self._data.items():

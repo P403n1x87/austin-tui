@@ -27,6 +27,8 @@ from pathlib import Path
 from textwrap import wrap
 from time import time
 from typing import Any
+from typing import Callable
+from typing import Optional
 from typing import Sequence
 
 from austin.aio import AsyncAustin
@@ -108,16 +110,19 @@ class AustinTUIController:
 
     def __init__(self) -> None:
         self._view_mode = AustinViewMode.LIVE
-        self._scaler = None
-        self._formatter = None
+        self._scaler: Optional[Callable[..., Any]] = None
+        self._formatter: Optional[Callable[..., Any]] = None
         self._last_timestamp = 0
-        self._update_task = None
-        self._exception = None
+        self._update_task: Optional[asyncio.Task[None]] = None
+        self._exception: Optional[Exception] = None
 
-        view_builder = ViewBuilder.from_resource("austin_tui.view", "tui.austinui")
+        view_builder = ViewBuilder.from_resource(
+            "austin_tui.view", "tui.austinui"
+        )
 
-        self.austin = None
-        self.view = view = view_builder.build()  # type: ignore[assignment]
+        self.austin: Optional[AsyncAustin] = None
+        self.view: AustinView = view_builder.build()  # type: ignore[assignment]
+        view = self.view
         self.view.callback = self.on_view_event
 
         view_builder.autoconnect(self)
@@ -221,7 +226,8 @@ class AustinTUIController:
             raise
 
         try:
-            await self.view._input_task
+            if self.view._input_task is not None:
+                await self.view._input_task
         except asyncio.CancelledError:
             pass
         except Exception:
@@ -271,7 +277,11 @@ class AustinTUIController:
     async def update_loop(self) -> None:
         """The UI update loop."""
         try:
-            while not self.view._stopped and self.view.is_open and self.view.root_widget:
+            while (
+                not self.view._stopped
+                and self.view.is_open
+                and self.view.root_widget
+            ):
                 if self.update():
                     if self._view_mode is AustinViewMode.GRAPH:
                         self.view.flamegraph.draw()
@@ -289,7 +299,11 @@ class AustinTUIController:
 
     def _change_thread(self, direction: ThreadNav) -> bool:
         """Change thread."""
-        austin = self.model.frozen_austin if self.model.frozen else self.model.austin
+        austin = (
+            self.model.frozen_austin or self.model.austin
+            if self.model.frozen
+            else self.model.austin
+        )
         prev_index = austin.current_thread
 
         austin.current_thread = max(
@@ -308,7 +322,7 @@ class AustinTUIController:
     async def on_next_thread(self) -> bool:
         """Handle next thread event."""
         if self._change_thread(ThreadNav.NEXT):
-            if self._graph:
+            if self._view_mode is AustinViewMode.GRAPH:
                 self.view.flamegraph.draw()
                 self.view.flame_view.refresh()
             else:
@@ -320,7 +334,7 @@ class AustinTUIController:
     async def on_previous_thread(self) -> bool:
         """Handle previous thread event."""
         if self._change_thread(ThreadNav.PREV):
-            if self._graph:
+            if self._view_mode is AustinViewMode.GRAPH:
                 self.view.flamegraph.draw()
                 self.view.flame_view.refresh()
             else:
@@ -373,11 +387,16 @@ class AustinTUIController:
 
     async def on_save(self, _: Any = None) -> bool:
         """Save the collected stats."""
-        model = self.model.frozen_austin if self.model.frozen else self.model.austin
+        model = (
+            self.model.frozen_austin if self.model.frozen else self.model.austin
+        )
 
         def _dump_stats() -> None:
+            assert self.model.system.child_process is not None
             pid = self.model.system.child_process.pid
-            output_file = Path(f"austin_{int(time())}_{pid}").with_suffix(".mojo")
+            output_file = Path(f"austin_{int(time())}_{pid}").with_suffix(
+                ".mojo"
+            )
             try:
                 with output_file.open("wb") as stream:
                     mojo_writer = MojoStreamWriter(stream)
@@ -406,7 +425,9 @@ class AustinTUIController:
 
         self.model.toggle_freeze()
         self.update()
-        self.view.notification.set_text("Paused" if self.model.frozen else "Resumed")
+        self.view.notification.set_text(
+            "Paused" if self.model.frozen else "Resumed"
+        )
         return True
 
     def _change_threshold(self, delta: float) -> float:
@@ -477,6 +498,7 @@ class AustinTUIController:
         self.model.austin.update(sample)
 
     async def on_metadata(self, metadata: AustinMetadata) -> None:
+        """Austin metadata received callback."""
         if metadata.name == "mode":
             self.view.set_mode(metadata.value)
         elif metadata.name == "python":

@@ -20,8 +20,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
-
 from austin_tui.widgets import BaseContainer
 from austin_tui.widgets import Rect
 from austin_tui.widgets import Widget
@@ -44,7 +42,7 @@ class Selector(BaseContainer):
         self._selected = 0
 
     @property
-    def selected(self) -> Optional[Widget]:
+    def selected(self) -> Widget:
         """Get the selected widget."""
         try:
             return self._children[self._selected]

@@ -44,6 +44,8 @@ class Table(Widget):
         self._data: TableData = []
 
     def _show_empty(self) -> bool:
+        if self.win is None:
+            return False
         win = self.win.get_win()
         if not win:
             return False
@@ -55,7 +57,10 @@ class Table(Widget):
     def _draw_row(self, i: int, row: List[Any]) -> None:
         x = 0
         available = self.rect.size.x - 1
+        assert self.win is not None
         win = self.win.get_win()
+        if win is None:
+            return
         for j in range(self._cols):
             if available <= x:
                 break
@@ -77,6 +82,7 @@ class Table(Widget):
         if data != self._data:
             self._data = data
             self._height = len(data)
+            assert self.parent is not None
             self.parent.resize(self.parent.rect)
             return True
 

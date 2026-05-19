@@ -1,6 +1,4 @@
 from austin_tui.view import ViewBuilder
-from austin_tui.view.austin import AustinView
-from austin_tui.widgets import Point
 from austin_tui.widgets import Rect
 from tests.mcurses import MWindow
 

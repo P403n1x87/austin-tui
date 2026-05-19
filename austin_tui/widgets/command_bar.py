@@ -34,4 +34,7 @@ class CommandBar(Box):
         try:
             return super().draw()
         finally:
-            self.win.get_win().clrtoeol()
+            if self.win is not None:
+                win = self.win.get_win()
+                if win is not None:
+                    win.clrtoeol()

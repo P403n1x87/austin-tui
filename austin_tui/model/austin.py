@@ -80,7 +80,7 @@ class AustinModel:
     """Austin model."""
 
     def __init__(self) -> None:
-        self.mode = None
+        self.mode: Optional[AustinProfileMode] = None
 
         self._samples = 0
         self._invalids = 0
@@ -100,9 +100,9 @@ class AustinModel:
 
         self.metadata: Optional[Dict[str, str]] = None
         self.threshold = 0.0
-        self.command_line: Optional[str] = None
+        self.command_line: Optional[List[str]] = None
 
-    def set_command_line(self, command_line: str) -> None:
+    def set_command_line(self, command_line: List[str]) -> None:
         """Set the command line."""
         self.command_line = command_line
 

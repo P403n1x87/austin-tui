@@ -45,9 +45,11 @@ class Box(Container):
 
     def _dims(self, flow: complex) -> List[int]:
         return [
-            0
-            if child.expand.along(flow)
-            else int(abs(Point(child.width, child.height).along(flow)))
+            (
+                0
+                if child.expand.along(flow)
+                else int(abs(Point(child.width, child.height).along(flow)))
+            )
             for child in self._children
         ]
 
@@ -92,9 +94,11 @@ class Box(Container):
 
         # compute the height of expanding widgets
         dimensions = [
-            0
-            if child.expand.along(self.flow)
-            else abs(Point(child.width, child.height).along(self.flow))
+            (
+                0
+                if child.expand.along(self.flow)
+                else abs(Point(child.width, child.height).along(self.flow))
+            )
             for child in self._children
         ]
         nvar = sum(_ == 0 for _ in dimensions)
@@ -110,7 +114,7 @@ class Box(Container):
         # place and resize children
         perp = Point(self.size.along(1j * self.flow.conjugate()))  # type: ignore[call-overload]
         pos = self.pos
-        for child, dim in zip(self._children, dimensions):
+        for child, dim in zip(self._children, dimensions, strict=False):
             size = perp
             if not dim:
                 if res_dim:
