@@ -64,5 +64,5 @@ class Palette:
         try:
             for cid, pair in self._color_pairs.items():
                 curses.init_pair(cid, *pair)
-        except curses.error:
+        except (curses.error, ValueError):
             curses.use_default_colors()
