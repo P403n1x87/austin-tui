@@ -190,7 +190,10 @@ class View(ABC):
 
     def close(self) -> None:
         """Close the view."""
-        if self._open and self.root_widget:
+        if not self._open:
+            return
+
+        if self.root_widget:
             self.root_widget.hide()
 
         if self._input_task is not None:

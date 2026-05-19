@@ -22,169 +22,33 @@
 
 import asyncio
 import sys
-from textwrap import wrap
-from typing import Any
-from typing import Optional
 
-from austin.aio import AsyncAustin
-from austin.cli import AustinArgumentParser
-from austin.cli import AustinCommandLineError
 from austin.errors import AustinError
-from austin.events import AustinMetadata
-from austin.events import AustinSample
-from psutil import Process
 
-from austin_tui import AustinProfileMode
 from austin_tui.controller import AustinTUIController
-from austin_tui.view.austin import AustinView
 
 
-def _print(text: str) -> None:
-    for line in wrap(text, 78):
-        print(line)
-
-
-class AustinTUIArgumentParser(AustinArgumentParser):
-    """Austin TUI implementation of the Austin argument parser."""
-
-    def __init__(self) -> None:
-        super().__init__(name="austin-tui", full=False)
-
-    def parse_args(self) -> Any:
-        """Parse command line arguments and report any errors."""
-        try:
-            return super().parse_args()
-        except AustinCommandLineError as e:
-            reason, *code = e.args
-            if reason:
-                _print(reason)
-            exit(code[0] if code else -1)
-
-
-class AustinTUI(AsyncAustin):
-    """Austin TUI implementation of AsyncAustin."""
+class AustinTUI:
+    """Austin TUI."""
 
     def __init__(self) -> None:
         super().__init__()
 
         self._controller = AustinTUIController()
-        self._view = self._controller.view
-
-        self._view.callback = self.on_view_event
-
-        self._global_stats: Optional[str] = None
 
         self._exception = None
-        self._austin_terminated = False
-
-    async def on_sample(self, sample: AustinSample) -> None:
-        """Austin sample received callback."""
-        self._controller.model.austin.update(sample)
-
-    async def on_metadata(self, metadata: AustinMetadata) -> None:
-        if metadata.name == "mode":
-            self._view.set_mode(metadata.value)
-        elif metadata.name == "python":
-            self._view.set_python(metadata.value)
-        else:
-            self._controller.model.austin.set_metadata(self._meta)
-
-    async def on_terminate(self) -> None:
-        """Austin terminate callback."""
-        self._austin_terminated = True
-
-        self._global_stats = None
-        await self._controller.stop()
-
-        self._view.stop()
-
-    def on_view_event(self, event: AustinView.Event, data: Any = None) -> None:
-        """View events handler."""
-
-        def _unhandled(_: Any) -> None:
-            raise RuntimeError(f"Unhandled view event: {event}")
-
-        {
-            AustinView.Event.QUIT: self.on_shutdown,
-            AustinView.Event.EXCEPTION: self.on_exception,
-        }.get(event, _unhandled)(data)  # type: ignore[operator]
-
-    async def start(self, args: AustinTUIArgumentParser) -> None:
-        """Start Austin and catch any exceptions."""
-        try:
-            await super().start(args)
-        except Exception:
-            self.shutdown()
-            raise
-
-        pargs = self.get_arguments()
-
-        if pargs.pid is not None:
-            child_process = Process(pargs.pid)
-        else:
-            austin_process = Process(self._proc.pid)
-            (child_process,) = austin_process.children()
-        command = child_process.cmdline()
-
-        mode = AustinProfileMode.MEMORY if pargs.memory else AustinProfileMode.TIME
-        self._view.mode = mode
-
-        """Austin ready callback."""
-        self._controller.model.system.set_child_process(child_process)
-        self._controller.model.austin.set_metadata(self._meta)
-        self._controller.model.austin.set_command_line(command)
-
-        self._controller.start()
-
-        self._view.set_pid(child_process.pid, pargs.children)
-
-    async def _start(self) -> None:
-        exc = None
-        try:
-            await self.start(sys.argv[1:])
-            await self.wait()
-            await self._view._input_task
-        except Exception as e:
-            exc = e
-            self._view.close()
-        except KeyboardInterrupt:
-            self._view.close()
-
-        if exc is not None:
-            self._view.close()
-            raise exc
-        if self._exception is not None:
-            self._view.close()
-            raise self._exception
 
     def run(self) -> None:
         """Run the TUI."""
         try:
-            asyncio.run(self._start())
+            asyncio.run(self._controller.start(sys.argv[1:]))
         except KeyboardInterrupt:
-            try:
-                self.terminate()
-            except AustinError:
-                pass
+            self._controller.shutdown()
         except asyncio.CancelledError:
-            pass
-
-    def shutdown(self) -> None:
-        """Shutdown the TUI."""
-        try:
-            self.terminate()
-        except AustinError:
-            pass
-        self._view.close()
-
-    def on_shutdown(self, _: Any = None) -> None:
-        """The shutdown view event handler."""
-        self.shutdown()
-
-    def on_exception(self, exc: Exception) -> None:
-        """The exception view event handler."""
-        self.shutdown()
-        raise exc
+            self._controller.shutdown()
+        except Exception:
+            self._controller.shutdown()
+            raise
 
 
 def main() -> None:
@@ -204,6 +68,12 @@ def main() -> None:
             "variable and that the command line arguments that you have provided are correct.",
             file=sys.stderr,
         )
+        import os
+
+        if os.environ.get("AUSTIN_DEBUG", None) is not None:
+            import traceback
+
+            traceback.print_exc()
         exit(-1)
 
     exit(0)
