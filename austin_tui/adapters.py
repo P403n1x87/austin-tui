@@ -180,7 +180,7 @@ def fmt_time(us: int) -> str:
     """Format microseconds into [mm]m[ss[.ff]]s."""
     s = us / 1e6
     m = int(s // 60)
-    return f"{m:02d}m{int(s):02d}s" if m else f"{s:.2f}s"
+    return f"{m:02d}m{int(s) % 60:02d}s" if m else f"{s:.2f}s"
 
 
 class DurationAdapter(FreezableAdapter):
