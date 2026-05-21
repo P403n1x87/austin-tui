@@ -21,6 +21,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import asyncio
+import curses
+import os
 from typing import List
 from typing import NamedTuple
 from typing import Optional
@@ -109,11 +111,24 @@ class PickerView(View):
         self._processes: List[PythonProcess] = []
         self._selected: int = 0
         self._selected_pid: Optional[int] = None
+        self._filter_text: str = ""
+        self._filter_active: bool = False
 
     @property
     def selected_pid(self) -> Optional[int]:
         """The PID chosen by the user, or None if the picker was dismissed."""
         return self._selected_pid
+
+    @property
+    def _visible_processes(self) -> List[PythonProcess]:
+        if not self._filter_text:
+            return self._processes
+        query = self._filter_text.lower()
+        return [
+            p
+            for p in self._processes
+            if query in " ".join(p.cmdline or [p.name]).lower()
+        ]
 
     def populate(self, processes: List[PythonProcess]) -> None:
         """Load the process list and render the initial table."""
@@ -121,19 +136,71 @@ class PickerView(View):
         self._selected = 0
         self._refresh_table()
 
+    def _refresh_filter_label(self) -> None:
+        visible = self._filter_active or self._filter_text
+        cursor = "_" if self._filter_active else ""
+        prefix = "  Filtering (ESC to cancel): " if self._filter_active else "  "
+        text = f"{prefix}{self._filter_text}{cursor}" if visible else ""
+        self.filter_text_lbl.set_text(text)  # type: ignore[attr-defined]
+        self.filter_text_lbl.draw()  # type: ignore[attr-defined]
+
     def _refresh_table(self) -> None:
         palette = self.palette
         pid_color = palette.get_color("proc_pid")
+        procs = self._visible_processes
         data = [
             [
                 _pid_cell(proc.pid, pid_color, i == self._selected),
                 _cmdline_cell(proc, palette, i == self._selected),
             ]
-            for i, proc in enumerate(self._processes)
+            for i, proc in enumerate(procs)
         ]
         self.proc_table.set_data(data)  # type: ignore[attr-defined]
         self.proc_table.draw()  # type: ignore[attr-defined]
         self.proc_scroll.refresh()  # type: ignore[attr-defined]
+
+    _FILTER_PASSTHROUGH = frozenset({"KEY_UP", "KEY_DOWN", "\n", "\r", "KEY_ENTER"})
+
+    async def _input_loop(self) -> None:
+        try:
+            if not self.root_widget:
+                raise RuntimeError("Missing root widget")
+
+            while self._open:
+                try:
+                    await asyncio.sleep(0.015)
+                except asyncio.CancelledError:
+                    break
+
+                if not self.root_widget._win:
+                    continue
+
+                try:
+                    event = self.root_widget._win.getkey()
+                    if self._filter_active and event not in self._FILTER_PASSTHROUGH:
+                        if event in ("KEY_BACKSPACE", "\x7f", "\b"):
+                            self._filter_text = self._filter_text[:-1]
+                        elif event == "\x1b":
+                            self._filter_active = False
+                            self._filter_text = ""
+                        elif len(event) == 1 and event.isprintable():
+                            self._filter_text += event
+                        else:
+                            continue
+                        self._selected = 0
+                        self._refresh_filter_label()
+                        self._refresh_table()
+                        self.root_widget.refresh()
+                    elif event in self._event_handlers:
+                        done = await asyncio.gather(
+                            *(_() for _ in self._event_handlers[event])
+                        )
+                        if any(done):
+                            self.root_widget.refresh()
+                except (KeyError, curses.error):
+                    pass
+        except Exception as exc:
+            self.on_exception(exc)
 
     async def on_up(self) -> bool:
         """Move selection up."""
@@ -148,7 +215,7 @@ class PickerView(View):
 
     async def on_down(self) -> bool:
         """Move selection down."""
-        if self._selected < len(self._processes) - 1:
+        if self._selected < len(self._visible_processes) - 1:
             self._selected += 1
             self._refresh_table()
             scroll = self.proc_scroll  # type: ignore[attr-defined]
@@ -159,10 +226,18 @@ class PickerView(View):
 
     async def on_select(self) -> bool:
         """Confirm selection and close the picker."""
-        if self._processes:
-            self._selected_pid = self._processes[self._selected].pid
+        procs = self._visible_processes
+        if procs:
+            self._selected_pid = procs[self._selected].pid
         self.close()
         return False
+
+    async def on_filter(self) -> bool:
+        """Toggle filter mode."""
+        self._filter_active = not self._filter_active
+        self._refresh_filter_label()
+        self._refresh_table()
+        return True
 
     async def on_quit(self) -> bool:
         """Dismiss the picker without selecting."""
@@ -197,6 +272,7 @@ def pick_python_process() -> Optional[int]:
     view.connect("\r", _select)
     view.connect("KEY_ENTER", _select)
 
+    os.environ.setdefault("ESCDELAY", "25")
     asyncio.run(_run_picker(view, processes))
 
     return view.selected_pid
