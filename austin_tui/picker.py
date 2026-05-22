@@ -46,13 +46,11 @@ class PythonProcess(NamedTuple):
     cmdline: List[str]
 
 
-def _get_python_processes() -> List[PythonProcess]:
+def _get_all_processes() -> List[PythonProcess]:
     procs = []
     for proc in psutil.process_iter(["pid", "name", "cmdline"]):
         try:
             name = proc.info["name"] or ""
-            if "python" not in name.lower():
-                continue
             cmdline: List[str] = proc.info["cmdline"] or []
             procs.append(PythonProcess(proc.info["pid"], name, cmdline))
         except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -113,6 +111,7 @@ class PickerView(View):
         self._selected_pid: Optional[int] = None
         self._filter_text: str = ""
         self._filter_active: bool = False
+        self._show_all: bool = False
 
     @property
     def selected_pid(self) -> Optional[int]:
@@ -121,14 +120,13 @@ class PickerView(View):
 
     @property
     def _visible_processes(self) -> List[PythonProcess]:
-        if not self._filter_text:
-            return self._processes
-        query = self._filter_text.lower()
-        return [
-            p
-            for p in self._processes
-            if query in " ".join(p.cmdline or [p.name]).lower()
-        ]
+        procs = self._processes
+        if not self._show_all:
+            procs = [p for p in procs if "python" in p.name.lower()]
+        if self._filter_text:
+            query = self._filter_text.lower()
+            procs = [p for p in procs if query in " ".join(p.cmdline or [p.name]).lower()]
+        return procs
 
     def populate(self, processes: List[PythonProcess]) -> None:
         """Load the process list and render the initial table."""
@@ -183,6 +181,7 @@ class PickerView(View):
                         elif event == "\x1b":
                             self._filter_active = False
                             self._filter_text = ""
+                            self.f_cmd.toggle()  # type: ignore[attr-defined]
                         elif len(event) == 1 and event.isprintable():
                             self._filter_text += event
                         else:
@@ -235,8 +234,60 @@ class PickerView(View):
     async def on_filter(self) -> bool:
         """Toggle filter mode."""
         self._filter_active = not self._filter_active
+        self.f_cmd.toggle()  # type: ignore[attr-defined]
         self._refresh_filter_label()
         self._refresh_table()
+        return True
+
+    async def on_toggle_all(self) -> bool:
+        """Toggle between all processes and Python-only."""
+        self._show_all = not self._show_all
+        self.a_cmd.toggle()  # type: ignore[attr-defined]
+        self._selected = 0
+        self.proc_scroll.top()  # type: ignore[attr-defined]
+        self._refresh_table()
+        return True
+
+    async def on_refresh(self) -> bool:
+        """Re-fetch the process list."""
+        self._processes = _get_all_processes()
+        self._selected = 0
+        self.proc_scroll.top()  # type: ignore[attr-defined]
+        self._refresh_table()
+        return True
+
+    async def on_page_up(self) -> bool:
+        """Scroll one page up."""
+        scroll = self.proc_scroll  # type: ignore[attr-defined]
+        scroll.scroll_page_up()
+        if self._selected >= scroll.curr_y + scroll.size.y:
+            self._selected = scroll.curr_y + scroll.size.y - 1
+            self._refresh_table()
+        return True
+
+    async def on_page_down(self) -> bool:
+        """Scroll one page down."""
+        scroll = self.proc_scroll  # type: ignore[attr-defined]
+        scroll.scroll_page_down()
+        if self._selected < scroll.curr_y:
+            self._selected = scroll.curr_y
+            self._refresh_table()
+        return True
+
+    async def on_home(self) -> bool:
+        """Jump to the first entry."""
+        self._selected = 0
+        self.proc_scroll.top()  # type: ignore[attr-defined]
+        self._refresh_table()
+        return True
+
+    async def on_end(self) -> bool:
+        """Jump to the last entry."""
+        procs = self._visible_processes
+        if procs:
+            self._selected = len(procs) - 1
+            self.proc_scroll.bottom()  # type: ignore[attr-defined]
+            self._refresh_table()
         return True
 
     async def on_quit(self) -> bool:
@@ -259,7 +310,7 @@ async def _run_picker(view: PickerView, processes: List[PythonProcess]) -> None:
 
 def pick_python_process() -> Optional[int]:
     """Show an interactive process picker. Returns the chosen PID or None."""
-    processes = _get_python_processes()
+    processes = _get_all_processes()
     if not processes:
         return None
 

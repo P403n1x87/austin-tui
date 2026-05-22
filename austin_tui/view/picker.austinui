@@ -67,29 +67,41 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 
       <!-- Command bar -->
       <aui:CommandBar name="command_bar">
-        <aui:Label name="quit_cmd"  text="Q"      width="3"  align="center" color="cmd_key" />
-        <aui:Label name="quit_lbl"  text="Quit"   width="5"                               />
-        <aui:Label name="up_cmd"    text="↑"      width="3"  align="center" color="cmd_key" />
-        <aui:Label name="up_lbl"    text="Up"     width="4"                               />
-        <aui:Label name="down_cmd"  text="↓"      width="3"  align="center" color="cmd_key" />
-        <aui:Label name="down_lbl"  text="Down"   width="6"                               />
-        <aui:Label name="enter_cmd" text="↵"      width="3"  align="center" color="cmd_key" />
-        <aui:Label name="enter_lbl" text="Select" width="8"                               />
-        <aui:Label name="f_cmd"     text="F"      width="3"  align="center" color="cmd_key" />
-        <aui:Label name="f_lbl"     text="Filter" width="8"                               />
-        <aui:Label name="filter_text_lbl" text="" color="filter_bar"                      />
+        <aui:Label name="quit_cmd"        text="Q"        width="3"  align="center" color="cmd_key" />
+        <aui:Label name="quit_lbl"        text=" Quit"    width="8"  />
+        <aui:Label name="up_cmd"          text="↑"        width="3"  align="center" color="cmd_key" />
+        <aui:Label name="up_lbl"          text=" Up"      width="6"  />
+        <aui:Label name="down_cmd"        text="↓"        width="3"  align="center" color="cmd_key" />
+        <aui:Label name="down_lbl"        text=" Down"    width="8"  />
+        <aui:Label name="enter_cmd"       text="↵"        width="3"  align="center" color="cmd_key" />
+        <aui:Label name="enter_lbl"       text=" Select"  width="10" />
+        <aui:ToggleLabel name="f_cmd"     text="F"        width="3"  align="center" on="cmd_on" off="cmd_off" state="0" />
+        <aui:Label name="f_lbl"           text=" Filter"  width="10" />
+        <aui:ToggleLabel name="a_cmd"     text="A"        width="3"  align="center" on="cmd_on" off="cmd_off" state="0" />
+        <aui:Label name="a_lbl"           text=" All"     width="7" />
+        <aui:Label name="r_cmd"           text="R"        width="3"  align="center" color="cmd_key" />
+        <aui:Label name="r_lbl"           text=" Refresh" width="11" />
+        <aui:Label name="filter_text_lbl" text="" color="filter_bar" />
       </aui:CommandBar>
 
     </aui:Box>
   </aui:Window>
 
   <!-- Signal mappings -->
-  <aui:signal key="KEY_UP"   handler="on_up"     />
-  <aui:signal key="KEY_DOWN" handler="on_down"   />
-  <aui:signal key="f"        handler="on_filter" />
-  <aui:signal key="F"        handler="on_filter" />
-  <aui:signal key="q"        handler="on_quit"   />
-  <aui:signal key="Q"        handler="on_quit"   />
+  <aui:signal key="KEY_UP"     handler="on_up"         />
+  <aui:signal key="KEY_DOWN"   handler="on_down"       />
+  <aui:signal key="f"          handler="on_filter"     />
+  <aui:signal key="F"          handler="on_filter"     />
+  <aui:signal key="a"          handler="on_toggle_all" />
+  <aui:signal key="A"          handler="on_toggle_all" />
+  <aui:signal key="r"          handler="on_refresh"    />
+  <aui:signal key="R"          handler="on_refresh"    />
+  <aui:signal key="KEY_PPAGE"  handler="on_page_up"    />
+  <aui:signal key="KEY_NPAGE"  handler="on_page_down"  />
+  <aui:signal key="KEY_HOME"   handler="on_home"       />
+  <aui:signal key="KEY_END"    handler="on_end"        />
+  <aui:signal key="q"          handler="on_quit"       />
+  <aui:signal key="Q"          handler="on_quit"       />
 
   <!-- Palette -->
   <!-- See https://github.com/gookit/color/blob/c7dc09464b28518c2ae383fa16b989e7c0169599/_examples/images/color-256.png -->
@@ -101,6 +113,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. -->
 
     <!-- Command bar -->
     <aui:color name="cmd_key" bg="18" />
+    <aui:color name="cmd_on"  bg="14" />
+    <aui:color name="cmd_off" bg="18" />
 
     <!-- Filter bar / table header -->
     <aui:color name="filter_bar"    fg="229" bg="235" />
