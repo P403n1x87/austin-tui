@@ -43,7 +43,7 @@ keywords = ["performance", "profiling", "testing", "development"]
 dependencies = [
   "austin-python~=2.1",
   "importlib_resources~=5.10",
-  "lxml>=5.0",
+  "lxml~=6.0",
   "psutil",
   "windows-curses~=2.1; sys_platform == 'win32'",
 ]
